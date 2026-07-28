@@ -232,7 +232,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
   </div>
   <div class="msgs" id="msgList"></div>
   <div class="chat-bar">
-    <input id="chatInput" type="text" placeholder="输入你的回复..." maxlength="500" autocomplete="off">
+    <input id="chatInput" type="text" placeholder="禁止粘贴，请打字或语音输入..." maxlength="500" autocomplete="off" onpaste="return false" ondrop="return false">
     <button class="mic" id="micBtn" onclick="toggleMic()" title="语音输入">🎤</button>
     <button class="send" id="sendBtn" onclick="sendMsg()">↑</button>
   </div>
@@ -991,15 +991,25 @@ function stopMic(){
 }
 
 /* ============================================================
-   键盘事件
+   键盘事件 & 防粘贴
    ============================================================ */
 document.addEventListener("keydown",function(e){
+  // 聊天输入框禁止粘贴（Ctrl+V / Shift+Insert）
+  if(e.target&&e.target.id==="chatInput"){
+    if((e.ctrlKey||e.metaKey)&&e.key==="v"){e.preventDefault();return}
+    if(e.shiftKey&&e.key==="Insert"){e.preventDefault();return}
+  }
   if(e.key==="Enter"){
     var ws=document.querySelector(".screen.active");
     if(!ws)return;
     if(ws.id==="welcome"){confirmName()}
     else if(ws.id==="chat"){sendMsg()}
   }
+});
+// 聊天输入框禁止右键粘贴
+document.addEventListener("contextmenu",function(e){
+  if(e.target&&e.target.id==="chatInput"){e.preventDefault()}
+});
 });
 
 /* ============================================================
