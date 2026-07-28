@@ -243,6 +243,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
 <div id="report" class="screen report"></div>
 
 <script>
+window.onerror=function(m,s,l,c,e){alert("JS Error: "+m+"\\nLine: "+l);return false};
 /* ============================================================
    全局状态 S
    ============================================================ */
@@ -926,7 +927,7 @@ document.addEventListener("keydown",function(e){
 /* ============================================================
    启动
    ============================================================ */
-init();
+try{init()}catch(e){alert("Init Error: "+e.message+"\\nLine: "+(e.lineNumber||""))};
 </script>
 </body>
 </html>
