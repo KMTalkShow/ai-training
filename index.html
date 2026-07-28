@@ -107,6 +107,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
   font-size:20px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .chat-bar .send:active{transform:scale(.9);opacity:.8}
 .chat-bar .send:disabled{background:#CCC}
+.chat-bar .mic{width:40px;height:40px;border-radius:50%;border:none;background:#FFF;color:var(--t2);
+  font-size:20px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.chat-bar .mic:active{transform:scale(.9)}
+.chat-bar .mic.rec{background:var(--c4);color:#FFF;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,77,79,.4)}50%{box-shadow:0 0 0 10px rgba(255,77,79,0)}}
+.mic-tip{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);
+  color:#FFF;padding:8px 20px;border-radius:20px;font-size:14px;z-index:50;display:none;max-width:90%;text-align:center}
+.mic-tip.show{display:block}
 
 /* ============================================================
    加载动画
@@ -224,8 +233,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
   <div class="msgs" id="msgList"></div>
   <div class="chat-bar">
     <input id="chatInput" type="text" placeholder="输入你的回复..." maxlength="500" autocomplete="off">
+    <button class="mic" id="micBtn" onclick="toggleMic()" title="语音输入">🎤</button>
     <button class="send" id="sendBtn" onclick="sendMsg()">↑</button>
   </div>
+  <div class="mic-tip" id="micTip">正在聆听...</div>
 </div>
 
 <!-- ============================================================
@@ -907,6 +918,76 @@ function pushToFeishu(){
 function backToHome(){
   S.scenario=null;S.msgs=[];S.round=0;S.score=null;
   go("home");
+}
+
+/* ============================================================
+   语音输入（Web Speech API）
+   ============================================================ */
+var recognition=null;
+var isRecording=false;
+
+function toggleMic(){
+  if(isRecording){stopMic();return}
+  startMic();
+}
+
+function startMic(){
+  var SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    alert("当前浏览器不支持语音输入\n\n请使用 Chrome 或 Edge 浏览器\n或在飞书中打开试试");
+    return;
+  }
+  if(!recognition){
+    recognition=new SpeechRecognition();
+    recognition.lang="zh-CN";
+    recognition.interimResults=true;
+    recognition.continuous=true;
+    recognition.maxAlternatives=1;
+    recognition.onresult=function(e){
+      var t="";
+      for(var i=e.resultIndex;i<e.results.length;i++){
+        t+=e.results[i][0].transcript;
+      }
+      $("chatInput").value=t;
+      $("chatInput").focus();
+      if(e.results[e.results.length-1].isFinal){
+        $("micTip").classList.remove("show");
+      } else {
+        $("micTip").textContent=t||"正在聆听...";
+        $("micTip").classList.add("show");
+      }
+    };
+    recognition.onerror=function(e){
+      stopMic();
+      $("micTip").classList.remove("show");
+      if(e.error==="not-allowed") alert("请允许麦克风权限后重试");
+      else if(e.error!=="aborted") alert("语音识别出错："+e.error);
+    };
+    recognition.onend=function(){
+      stopMic();
+    };
+  }
+  try{
+    isRecording=true;
+    $("micBtn").classList.add("rec");
+    $("micBtn").textContent="⏹";
+    $("micTip").textContent="正在聆听...";
+    $("micTip").classList.add("show");
+    recognition.start();
+  }catch(e){
+    stopMic();
+    alert("语音启动失败："+e.message);
+  }
+}
+
+function stopMic(){
+  isRecording=false;
+  $("micBtn").classList.remove("rec");
+  $("micBtn").textContent="🎤";
+  $("micTip").classList.remove("show");
+  if(recognition){
+    try{recognition.stop()}catch(e){}
+  }
 }
 
 /* ============================================================
