@@ -395,18 +395,21 @@ function lsSet(k,v){try{localStorage.setItem("ahs_"+k,v)}catch(e){}}
    初始化
    ============================================================ */
 function init(){
-  S.key = lsGet("key");
-  S.name = lsGet("name");
-  S.feishuHook = lsGet("feishuHook");
+  var DK="sk-969836081e5f4d22b1f9f1e67bd1bb42";
+  var DH="https://open.feishu.cn/open-apis/bot/v2/hook/cee4d923-31a1-46e7-9e2c-e557866514b0";
+  S.key=lsGet("key")||DK;if(!lsGet("key"))lsSet("key",DK);
+  S.feishuHook=lsGet("feishuHook")||DH;if(!lsGet("feishuHook"))lsSet("feishuHook",DH);
+  S.name=lsGet("name");
   if(S.key){$("apiKeyW").value=S.key;$("apiKeyH").value=S.key}
   if(S.feishuHook){$("hookInputW").value=S.feishuHook;$("hookInputH").value=S.feishuHook}
   if(S.name){
     $("nameInput").value=S.name;
     $("greetName").textContent=S.name;
     go("home");
-  } else {
-    go("welcome");
-  }
+    var p=new URLSearchParams(window.location.search);
+    var s=p.get("scenario");
+    if(s)setTimeout(function(){startPractice(s)},500);
+  }else{go("welcome");}
 }
 
 /* ============================================================
