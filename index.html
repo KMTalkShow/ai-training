@@ -647,10 +647,10 @@ function buildCustomerPrompt(){
     sc.script,
     "",
     "## 铁律（必须严格遵守）",
-    "1. 禁止主动提延保、配件、严选、手机膜、手机壳、充电器、充电宝、数据线——除非店员先提",
-    "2. 店员推荐产品：第1次找合理理由拒绝，第2次换不同角度仍拒绝，第3次店员讲得特别专业详细才有松动空间",
-    "3. 店员如果用「回收加价换你买配件/延保/严选」这种诱导方式 → 坚决拒绝、表达不满",
-    "4. 店员用「可以多给你一点回收价但你得买XX」 → 坚决拒绝、不满",
+    "1. 禁止主动提延保、配件、严选、膜、壳、充电器——除非店员先提",
+    "2. 店员推荐当前场景相关产品：第1次找合理理由拒绝，第2次换角度仍拒绝，第3次店员讲得专业才有松动",
+    "3. 店员如果用「回收加价换你买XX」诱导 → 坚决拒绝、不满",
+    "4. 店员自然提到门店其他服务（黄金回收、奢侈品回收、3C数码回收、严选二手机、延保）→ 这是二次营销话术训练，你要表示有兴趣，追问几句，但不过度承诺",
     "5. 每次回复15-50字，口语化，像真人聊天",
     "6. 根据店员上一句话的具体内容来回应，不要自说自话",
     "7. 不要复述场景描述，要有真实顾客的随机感和情绪",
@@ -679,15 +679,23 @@ function buildEvalPrompt(){
     "## 知识库参考话术",
     std,
     "",
-    "## 评估维度（各25分，总分100）",
+    "## 评估维度",
     "1. 准确性（25分）：是否准确理解顾客需求，回答是否专业、信息准确",
     "2. 说服力（25分）：话术是否有说服力，能否有效化解顾客异议",
     "3. 应变力（25分）：能否灵活应对顾客的各种问题和质疑",
     "4. 合规性（25分）：是否遵守销售规范，不违规诱导",
     "",
+    "## 二次营销开口检查（额外评估，不占100分）",
+    "检查店员在对话中是否自然提到了以下5项门店业务：",
+    "• 黄金回收 • 奢侈品回收 • 3C数码回收 • 严选二手机 • 延保",
+    "marketing_mentioned: 列出提到了哪些（数组）",
+    "marketing_rate: 开口率 = 提到的数量/5",
+    "注意：店员在当前场景对话中顺带提及就算开口，不需要深入介绍",
+    "",
     "## 合规红线（触发即合规性0分）",
     "店员主动说「回收价加一点，你买个配件/延保/严选」或以加价换购买 → 合规性0分",
     "注意：顾客自己主动提出要加钱、自己主动要买配件/延保，不算违规",
+    "注意：店员自然提及黄金/奢侈品/3C/严选/延保服务 ≠ 合规红线，这是二次营销",
     "",
     "## 禁语（出现在对话中合规性不超过5分）",
     "「您去其他家看看」「标准就这样」「跟原装一样」「官方可查」",
@@ -698,18 +706,20 @@ function buildEvalPrompt(){
     "## 输出格式（严格JSON）",
     "返回如下JSON，不要markdown代码块，只要纯JSON：",
     '{',
-    '  "accuracy": 数字0-25,',
-    '  "persuasion": 数字0-25,',
-    '  "adaptability": 数字0-25,',
-    '  "compliance": 数字0-25,',
+    '  "accuracy": 0-25,',
+    '  "persuasion": 0-25,',
+    '  "adaptability": 0-25,',
+    '  "compliance": 0-25,',
     '  "total": 四项之和,',
     '  "grade": "excellent|good|pass|fail",',
-    '  "summary": "30字以内的总评",',
-    '  "strengths": ["亮点1","亮点2"],',
-    '  "weaknesses": ["不足1","不足2"],',
+    '  "summary": "30字以内总评",',
+    '  "strengths": ["亮点1"],',
+    '  "weaknesses": ["不足1"],',
     '  "suggestion": "1-2句改进建议",',
     '  "redline": true/false,',
-    '  "forbidden": true/false',
+    '  "forbidden": true/false,',
+    '  "marketing_mentioned": ["黄金回收","奢侈品回收",...],',
+    '  "marketing_rate": 0.0到1.0的数字',
     '}'
   ].join("\n");
 }
@@ -739,7 +749,8 @@ function parseScore(raw){
   var defaults={
     accuracy:0,persuasion:0,adaptability:0,compliance:0,
     total:0,grade:"fail",summary:"评估解析失败，请重试",
-    strengths:[],weaknesses:[],suggestion:"",redline:false,forbidden:false
+    strengths:[],weaknesses:[],suggestion:"",redline:false,forbidden:false,
+    marketing_mentioned:[],marketing_rate:0
   };
   try{
     var parsed=JSON.parse(raw);
@@ -754,7 +765,9 @@ function parseScore(raw){
       weaknesses:parsed.weaknesses||[],
       suggestion:parsed.suggestion||"",
       redline:!!parsed.redline,
-      forbidden:!!parsed.forbidden
+      forbidden:!!parsed.forbidden,
+      marketing_mentioned:parsed.marketing_mentioned||[],
+      marketing_rate:Number(parsed.marketing_rate)||0
     };
     score.total=score.accuracy+score.persuasion+score.adaptability+score.compliance;
     if(score.total>=95)score.grade="excellent";
@@ -832,6 +845,15 @@ function renderReport(sc){
         +'<div class="r-card-title">💡 改进建议</div>'
         +'<div style="font-size:13px;color:var(--t2);line-height:1.6">'+escHtml(sc.suggestion)+'</div>'
       +'</div>':'')
+      +(function(){
+        var m=sc.marketing_mentioned||[],mr=sc.marketing_rate||0;
+        var all=["黄金回收","奢侈品回收","3C数码回收","严选二手机","延保"];
+        var tags="";all.forEach(function(a){
+          var hit=m.indexOf(a)>=0;
+          tags+='<span style="display:inline-block;padding:3px 10px;margin:2px;border-radius:12px;font-size:11px;'+(hit?'background:#E8F8F0;color:var(--c1)':'background:#F5F5F5;color:var(--t3)')+'">'+(hit?'✅ ':'⬜ ')+a+'</span>';
+        });
+        return '<div class=\"r-card\"><div class=\"r-card-title\">📢 二次营销开口率：'+Math.round(mr*100)+'%（'+(m.length)+'/5）</div>'+tags+'</div>';
+      })()
       +'<div class="r-card">'+flagsHtml+'</div>'
     +'</div>'
     +'<div class="r-actions">'
@@ -848,6 +870,7 @@ function saveHistory(){
     grade:S.score.grade,accuracy:S.score.accuracy,persuasion:S.score.persuasion,
     adaptability:S.score.adaptability,compliance:S.score.compliance,
     redline:S.score.redline,forbidden:S.score.forbidden,rounds:S.round,
+    marketing_mentioned:S.score.marketing_mentioned||[],marketing_rate:S.score.marketing_rate||0,
     time:new Date().toISOString()};
   var h=[];try{h=JSON.parse(localStorage.getItem("ahs_history")||"[]")}catch(e){}
   h.push(rec);localStorage.setItem("ahs_history",JSON.stringify(h));
@@ -871,6 +894,10 @@ function pushToFeishu(){
         {tag:"hr"},
         {tag:"div",text:{tag:"lark_md",content:"**总分："+sc.total+"分**（"+gradeMap[sc.grade]+"）  "+S.round+"轮对话"}},
         {tag:"div",text:{tag:"lark_md",content:"准确性 "+sc.accuracy+" | 说服力 "+sc.persuasion+" | 应变力 "+sc.adaptability+" | 合规性 "+sc.compliance}},
+        (function(){
+          var m=sc.marketing_mentioned||[],mr=sc.marketing_rate||0;
+          return {tag:"div",text:{tag:"lark_md",content:"📢 **二次营销开口率："+Math.round(mr*100)+"%**（"+m.length+"/5）"+(m.length?m.join("、"):"未开口")}};
+        })(),
         {tag:"hr"},
         {tag:"div",text:{tag:"lark_md",content:"💬 "+escHtml(sc.summary||"暂无评语")}}
       ]
@@ -962,12 +989,14 @@ function stopMic(){
 function showAdmin(){
   var h=[];try{h=JSON.parse(localStorage.getItem("ahs_history")||"[]")}catch(e){}
   if(!h.length){$("adminContent").innerHTML='<div style=\"text-align:center;padding:60px;color:var(--t3)\">暂无对练记录</div>';go("admin");return}
-  var total=h.length,passed=0,redlines=0,people={},cats={};
+  var total=h.length,passed=0,redlines=0,people={},cats={},totalMktRate=0;
   h.forEach(function(r){
     if(r.grade!=="fail")passed++;if(r.redline)redlines++;
-    if(!people[r.name])people[r.name]={total:0,passed:0,scores:[]};
+    if(!people[r.name])people[r.name]={total:0,passed:0,scores:[],mktRates:[]};
     people[r.name].total++;if(r.grade!=="fail")people[r.name].passed++;
     people[r.name].scores.push(r.total);
+    people[r.name].mktRates.push(r.marketing_rate||0);
+    totalMktRate+=(r.marketing_rate||0);
     if(!cats[r.cat])cats[r.cat]={total:0,passed:0};
     cats[r.cat].total++;if(r.grade!=="fail")cats[r.cat].passed++;
   });
@@ -981,12 +1010,15 @@ function showAdmin(){
   html+='<div style=\"background:#FFFBE6;padding:12px;border-radius:8px;text-align:center\"><div style=\"font-size:24px;font-weight:700;color:var(--c2)\">'+passed+'</div><div style=\"font-size:11px;color:var(--t2)\">通过</div></div>';
   html+='<div style=\"background:#FFF1F0;padding:12px;border-radius:8px;text-align:center\"><div style=\"font-size:24px;font-weight:700;color:var(--c4)\">'+redlines+'</div><div style=\"font-size:11px;color:var(--t2)\">红线触发</div></div>';
   html+='</div></div>';
+  html+='<div style=\"background:#E8F8F0;padding:12px;border-radius:8px;text-align:center\"><div style=\"font-size:24px;font-weight:700;color:var(--c1)\">'+Math.round(totalMktRate/total*100)+'%</div><div style=\"font-size:11px;color:var(--t2)\">人均开口率</div></div>';
+  html+='</div></div>';
   html+='<div class=\"r-card\"><div class=\"r-card-title\">👥 按人员</div>';
   Object.keys(people).sort().forEach(function(n){
     var p=people[n],pr=p.total?(p.passed/p.total*100).toFixed(1):"0.0";
     var avg=(p.scores.reduce(function(a,b){return a+b},0)/p.scores.length).toFixed(0);
+    var avgMkt=Math.round(p.mktRates.reduce(function(a,b){return a+b},0)/p.mktRates.length*100);
     html+='<div style=\"display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)\">';
-    html+='<div><b>'+escHtml(n)+'</b><span style=\"font-size:11px;color:var(--t3);margin-left:8px\">均'+avg+'分</span></div>';
+    html+='<div><b>'+escHtml(n)+'</b><span style=\"font-size:11px;color:var(--t3);margin-left:8px\">均'+avg+'分 · 开口率'+avgMkt+'%</span></div>';
     html+='<div style=\"color:'+(pr>=85?'var(--c1)':'var(--c4)')+'\">'+pr+'% <span style=\"font-size:11px;color:var(--t3)\">'+p.passed+'/'+p.total+'</span></div></div>';
   });
   html+='</div>';
