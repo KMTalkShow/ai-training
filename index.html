@@ -945,8 +945,17 @@ function pushToFeishu(){
 
   xhr.send(JSON.stringify(body));
 
+  // 尝试写入多维表格（本地同步服务不可达则静默跳过）
+  var sc2=S.score,gm2={excellent:"优秀",good:"良好",pass:"合格",fail:"加油"};
+  var rec={name:S.name,scenario:S.scenario.name,cat:S.scenario.tag,
+    total:sc2.total,grade_text:gm2[sc2.grade]||"加油",
+    accuracy:sc2.accuracy,persuasion:sc2.persuasion,
+    adaptability:sc2.adaptability,compliance:sc2.compliance,
+    marketing_rate:Math.round((sc2.marketing_rate||0)*100),
+    marketing_text:(sc2.marketing_mentioned||[]).join("、")||"无",
+    redline:sc2.redline,forbidden:sc2.forbidden,rounds:S.round};
+  try{var sx=new XMLHttpRequest();sx.open("POST","http://localhost:8765/api/sync",true);sx.setRequestHeader("Content-Type","application/json; charset=utf-8");sx.timeout=3000;sx.send(JSON.stringify(rec))}catch(e){}
 }
-
 
 /* ============================================================
    返回主页
