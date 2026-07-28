@@ -494,6 +494,8 @@ function renderScards(cat){
       +'<div class="sc-arr">›</div></div>';
   });
   $("scardList").innerHTML=h||'<div style="text-align:center;padding:40px;color:var(--t3)">暂无场景</div>';
+  // 李家莉显示管理入口
+  if(S.name==="李家莉"){$("adminBtn").style.display="block"}else{$("adminBtn").style.display="none"}
 }
 
 function filterCat(el,cat){
