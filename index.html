@@ -178,12 +178,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
       <input id="nameInput" type="text" placeholder="请输入你的名字" maxlength="20" autocomplete="off">
     </div>
     <button class="btn btn-p" onclick="confirmName()">开始对练</button>
-    <div class="api-hint" onclick="toggleApiBar()" style="margin-top:8px">⚙ 设置 API Key 和飞书推送</div>
-    <div id="apiBarW" class="api-bar" style="flex-direction:column;align-items:stretch">
-      <input id="apiKeyW" type="password" placeholder="DeepSeek API Key（必填）">
-      <input id="hookInputW" type="text" placeholder="飞书 Webhook 地址（可选，用于推送报告到群）" style="margin-top:6px">
-      <button class="btn btn-s" style="padding:10px 16px;font-size:13px;margin-top:6px" onclick="saveApiKey('w')">保存</button>
-    </div>
   </div>
 </div>
 
@@ -191,12 +185,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
      主页（场景选择）
      ============================================================ -->
 <div id="home" class="screen">
-  <div class="gear" onclick="toggleApiBarH()">⚙</div>
-  <div id="apiBarH" class="api-bar" style="padding:0 16px;flex-direction:column;align-items:stretch">
-    <input id="apiKeyH" type="password" placeholder="DeepSeek API Key（必填）">
-    <input id="hookInputH" type="text" placeholder="飞书 Webhook 地址（可选）" style="margin-top:6px">
-    <button class="btn btn-s" style="padding:10px 16px;font-size:13px;margin-top:6px" onclick="saveApiKey('h')">保存</button>
-  </div>
   <div class="home-header">
     <div class="greet">👋 <b id="greetName"></b>，选择对练场景</div>
     <div class="sub">随机抽题，模拟真实顾客对话</div>
@@ -401,8 +389,6 @@ function init(){
   S.key=DK;lsSet("key",DK);
   S.feishuHook=DH;lsSet("feishuHook",DH);
   S.name=lsGet("name");
-  if(S.key){$("apiKeyW").value=S.key;$("apiKeyH").value=S.key}
-  if(S.feishuHook){$("hookInputW").value=S.feishuHook;$("hookInputH").value=S.feishuHook}
   if(S.name){
     $("nameInput").value=S.name;
     $("greetName").textContent=S.name;
@@ -422,9 +408,6 @@ function confirmName(){
   var n=$("nameInput").value.trim();
   if(!n){alert("请输入你的名字");return}
   S.name=n;lsSet("name",n);$("greetName").textContent=n;
-  // 同时检查 API Key
-  var k=$("apiKeyW").value.trim();
-  if(k){S.key=k;lsSet("key",k)}
   go("home");
 }
 
