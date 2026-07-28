@@ -417,7 +417,7 @@ function init(){
     $("nameInput").value=S.name;
     $("greetName").textContent=S.name;
     go("home");
-    if(S.name==="李家莉"){$("adminBtn").style.display="block"}
+    try{if(S.name==="李家莉"){$("adminBtn").style.display="block"}}catch(e){}
     var p=new URLSearchParams(window.location.search);
     var s=p.get("scenario");
     if(s)setTimeout(function(){startPractice(s)},500);
@@ -433,8 +433,7 @@ function confirmName(){
   S.name=n;lsSet("name",n);$("greetName").textContent=n;
   go("home");
   // 李家莉显示管理面板入口
-  if(n==="李家莉"){$("adminBtn").style.display="block"}
-  else{$("adminBtn").style.display="none"}
+  try{if(n==="李家莉"){$("adminBtn").style.display="block"}else{$("adminBtn").style.display="none"}}catch(e){}
 }
 
 function toggleApiBar(){
@@ -495,7 +494,7 @@ function renderScards(cat){
   });
   $("scardList").innerHTML=h||'<div style="text-align:center;padding:40px;color:var(--t3)">暂无场景</div>';
   // 李家莉显示管理入口
-  if(S.name==="李家莉"){$("adminBtn").style.display="block"}else{$("adminBtn").style.display="none"}
+  try{if(S.name==="李家莉"){$("adminBtn").style.display="block"}}catch(e){}else{$("adminBtn").style.display="none"}
 }
 
 function filterCat(el,cat){
@@ -943,7 +942,7 @@ function pushToFeishu(){
 function backToHome(){
   S.scenario=null;S.msgs=[];S.round=0;S.score=null;
   go("home");
-  if(S.name==="李家莉"){$("adminBtn").style.display="block"}
+  try{if(S.name==="李家莉"){$("adminBtn").style.display="block"}}catch(e){}
 }
 
 /* ============================================================
