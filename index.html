@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>爱回收 AI 对练</title>
+<style>
+/* ============================================================
+   全局样式 & 变量
+   ============================================================ */
+:root {
+  --c1:#00B578; --c2:#FF8F1F; --c3:#1677FF; --c4:#FF4D4F;
+  --bg:#F5F5F5; --card:#FFF; --t1:#1A1A1A; --t2:#666; --t3:#999;
+  --bd:#E8E8E8; --r:12px; --shadow:0 2px 12px rgba(0,0,0,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;max-width:480px;margin:0 auto;
+  -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+.screen{display:none;padding:16px;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* ============================================================
+   按钮
+   ============================================================ */
+.btn{display:inline-flex;align-items:center;justify-content:center;border:none;
+  border-radius:var(--r);padding:12px 24px;font-size:16px;font-weight:600;cursor:pointer;
+  transition:all .2s;gap:6px;white-space:nowrap}
+.btn:active{transform:scale(.96);opacity:.85}
+.btn-p{background:var(--c1);color:#FFF;width:100%}
+.btn-s{background:var(--c3);color:#FFF}
+.btn-o{background:#FFF;color:var(--t1);border:1px solid var(--bd)}
+.btn-d{background:var(--c4);color:#FFF}
+.btn:disabled{opacity:.5;pointer-events:none}
+
+/* ============================================================
+   欢迎页（名字输入）
+   ============================================================ */
+.welcome{justify-content:center;align-items:center;text-align:center;gap:32px}
+.welcome .logo{font-size:64px;line-height:1}
+.welcome h1{font-size:24px;font-weight:700}
+.welcome p{color:var(--t2);font-size:14px;line-height:1.6}
+.welcome .inp-wrap{width:100%;position:relative}
+.welcome input{width:100%;padding:14px 16px;border:2px solid var(--bd);border-radius:var(--r);
+  font-size:16px;outline:none;transition:border .2s;text-align:center}
+.welcome input:focus{border-color:var(--c1)}
+
+/* ============================================================
+   主页（场景选择）
+   ============================================================ */
+.home-header{text-align:center;padding:12px 0 8px}
+.home-header .greet{font-size:14px;color:var(--t2)}
+.home-header .greet b{color:var(--c1);font-size:18px}
+.home-header .sub{font-size:12px;color:var(--t3);margin-top:4px}
+
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:8px 0;-webkit-overflow-scrolling:touch;flex-shrink:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 16px;border-radius:20px;font-size:13px;white-space:nowrap;cursor:pointer;
+  background:#FFF;color:var(--t2);border:1px solid var(--bd);transition:all .2s;flex-shrink:0}
+.tab.on{background:var(--c1);color:#FFF;border-color:var(--c1)}
+.tab .tab-emoji{font-size:16px;margin-right:2px}
+
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0}
+.scard{background:var(--card);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;
+  box-shadow:var(--shadow);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px}
+.scard:active{transform:scale(.98);opacity:.85}
+.scard .sc-emoji{font-size:36px;flex-shrink:0;width:48px;text-align:center}
+.scard .sc-info{flex:1;min-width:0}
+.scard .sc-name{font-size:15px;font-weight:600}
+.scard .sc-desc{font-size:12px;color:var(--t2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scard .sc-tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;
+  background:#E8F8F0;color:var(--c1);margin-top:4px}
+.scard .sc-arr{color:var(--t3);font-size:18px;flex-shrink:0}
+
+.footer{text-align:center;padding:12px 0 4px;flex-shrink:0}
+.footer .api-hint{font-size:11px;color:var(--t3);cursor:pointer;text-decoration:underline}
+.footer .api-bar{display:none;margin-top:8px}
+.footer .api-bar.show{display:flex;gap:8px}
+.footer .api-bar input{flex:1;padding:10px 12px;border:1px solid var(--bd);border-radius:var(--r);font-size:13px;outline:none}
+.footer .api-bar input:focus{border-color:var(--c1)}
+
+/* ============================================================
+   对话页
+   ============================================================ */
+.chat-top{display:flex;align-items:center;gap:10px;padding:8px 0 12px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.chat-top .back{font-size:22px;cursor:pointer;padding:4px;color:var(--t2);line-height:1}
+.chat-top .sc-emoji-sm{font-size:28px}
+.chat-top .sc-meta{flex:1;min-width:0}
+.chat-top .sc-meta .sc-title{font-size:14px;font-weight:600}
+.chat-top .sc-meta .sc-sub{font-size:11px;color:var(--t3)}
+.chat-top .end-btn{padding:8px 16px;font-size:13px;border-radius:20px}
+
+.msgs{flex:1;overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
+.msg{display:flex;gap:8px;max-width:92%}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.msg .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:20px;flex-shrink:0;background:#F0F0F0}
+.msg .bubble{padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.6;word-break:break-word}
+.msg.assistant .bubble{background:var(--card);border-top-left-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.msg.user .bubble{background:var(--c1);color:#FFF;border-top-right-radius:4px}
+.msg .sys-tip{background:#FFFBE6;color:#AD8B00;padding:8px 12px;border-radius:8px;font-size:12px;margin:0 auto;text-align:center}
+
+.chat-bar{display:flex;gap:8px;padding:10px 0;border-top:1px solid var(--bd);flex-shrink:0}
+.chat-bar input{flex:1;padding:10px 14px;border:1px solid var(--bd);border-radius:20px;font-size:14px;outline:none}
+.chat-bar input:focus{border-color:var(--c1)}
+.chat-bar .send{width:40px;height:40px;border-radius:50%;border:none;background:var(--c1);color:#FFF;
+  font-size:20px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.chat-bar .send:active{transform:scale(.9);opacity:.8}
+.chat-bar .send:disabled{background:#CCC}
+
+/* ============================================================
+   加载动画
+   ============================================================ */
+.loading-screen{position:fixed;top:0;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;
+  background:rgba(255,255,255,.95);z-index:100;display:none;flex-direction:column;
+  justify-content:center;align-items:center;gap:20px}
+.loading-screen.show{display:flex}
+.spinner{width:48px;height:48px;border:4px solid var(--bd);border-top-color:var(--c1);
+  border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen .l-text{font-size:15px;color:var(--t2)}
+.loading-screen .l-sub{font-size:12px;color:var(--t3)}
+
+/* ============================================================
+   报告页
+   ============================================================ */
+.report{padding:0}
+.report .r-header{text-align:center;padding:24px 16px 20px;background:linear-gradient(135deg,#E8F8F0,#FFF)}
+.report .r-header .r-emoji{font-size:56px;line-height:1.2}
+.report .r-header .r-grade{font-size:36px;font-weight:800;margin:6px 0}
+.report .r-header .r-grade.excellent{color:var(--c1)}
+.report .r-header .r-grade.good{color:var(--c3)}
+.report .r-header .r-grade.pass{color:var(--c2)}
+.report .r-header .r-grade.fail{color:var(--c4)}
+.report .r-header .r-sub{font-size:13px;color:var(--t2)}
+
+.report .r-body{padding:16px}
+.report .r-card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.report .r-card .r-card-title{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.report .r-score-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.report .r-score-row:last-child{margin-bottom:0}
+.report .r-score-label{font-size:13px;width:52px;flex-shrink:0;color:var(--t2)}
+.report .r-score-bar-wrap{flex:1;height:10px;background:#F0F0F0;border-radius:5px;overflow:hidden}
+.report .r-score-bar{height:100%;border-radius:5px;transition:width .6s ease}
+.report .r-score-bar.a{background:var(--c1)} .report .r-score-bar.b{background:var(--c3)}
+.report .r-score-bar.c{background:var(--c2)} .report .r-score-bar.d{background:var(--c4)}
+.report .r-score-val{font-size:14px;font-weight:700;width:36px;text-align:right;flex-shrink:0}
+.report .r-comment{font-size:13px;color:var(--t2);line-height:1.6;padding:12px;background:#FAFAFA;border-radius:8px;margin-top:12px}
+.report .r-flags{margin-top:12px}
+.report .r-flag{display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 10px;border-radius:6px;margin-bottom:6px}
+.report .r-flag.red{background:#FFF1F0;color:var(--c4)}
+.report .r-flag.yellow{background:#FFFBE6;color:#AD8B00}
+.report .r-flag.green{background:#E8F8F0;color:var(--c1)}
+
+.report .r-actions{display:flex;gap:10px;padding:8px 16px 24px}
+.report .r-actions .btn{flex:1}
+
+/* 保存 API Key 的小齿轮 */
+.gear{position:absolute;top:12px;right:12px;font-size:18px;cursor:pointer;color:var(--t3);z-index:10}
+.gear:active{opacity:.6}
+
+/* 对话轮数指示 */
+.round-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:10px;background:#F0F0F0;color:var(--t3)}
+.round-badge.warn{background:#FFF1F0;color:var(--c4)}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     欢迎页
+     ============================================================ -->
+<div id="welcome" class="screen active">
+  <div class="welcome">
+    <div class="logo">🤖</div>
+    <h1>爱回收 AI 对练</h1>
+    <p>模拟真实顾客对话，AI 自动评分<br>3C回收 · 严选销售 · 配件销售 · 延保销售</p>
+    <div class="inp-wrap">
+      <input id="nameInput" type="text" placeholder="请输入你的名字" maxlength="20" autocomplete="off">
+    </div>
+    <button class="btn btn-p" onclick="confirmName()">开始对练</button>
+    <div class="api-hint" onclick="toggleApiBar()" style="margin-top:8px">⚙ 设置 API Key 和飞书推送</div>
+    <div id="apiBarW" class="api-bar" style="flex-direction:column;align-items:stretch">
+      <input id="apiKeyW" type="password" placeholder="DeepSeek API Key（必填）">
+      <input id="hookInputW" type="text" placeholder="飞书 Webhook 地址（可选，用于推送报告到群）" style="margin-top:6px">
+      <button class="btn btn-s" style="padding:10px 16px;font-size:13px;margin-top:6px" onclick="saveApiKey('w')">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     主页（场景选择）
+     ============================================================ -->
+<div id="home" class="screen">
+  <div class="gear" onclick="toggleApiBarH()">⚙</div>
+  <div id="apiBarH" class="api-bar" style="padding:0 16px;flex-direction:column;align-items:stretch">
+    <input id="apiKeyH" type="password" placeholder="DeepSeek API Key（必填）">
+    <input id="hookInputH" type="text" placeholder="飞书 Webhook 地址（可选）" style="margin-top:6px">
+    <button class="btn btn-s" style="padding:10px 16px;font-size:13px;margin-top:6px" onclick="saveApiKey('h')">保存</button>
+  </div>
+  <div class="home-header">
+    <div class="greet">👋 <b id="greetName"></b>，选择对练场景</div>
+    <div class="sub">随机抽题，模拟真实顾客对话</div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="scroll" id="scardList"></div>
+  <div class="footer">
+    <button class="btn btn-o" style="width:100%" onclick="randomScenario()">🎲 随机抽取一个场景</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     对话页
+     ============================================================ -->
+<div id="chat" class="screen" style="padding-bottom:0">
+  <div class="chat-top">
+    <div class="back" onclick="backToHome()">←</div>
+    <div class="sc-emoji-sm" id="chatEmoji"></div>
+    <div class="sc-meta">
+      <div class="sc-title" id="chatTitle"></div>
+      <div class="sc-sub"><span id="chatCust"></span> · 轮数 <span id="roundCount" class="round-badge">0</span></div>
+    </div>
+    <button class="btn btn-d end-btn" onclick="endPractice()">结束对练</button>
+  </div>
+  <div class="msgs" id="msgList"></div>
+  <div class="chat-bar">
+    <input id="chatInput" type="text" placeholder="输入你的回复..." maxlength="500" autocomplete="off">
+    <button class="send" id="sendBtn" onclick="sendMsg()">↑</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     加载遮罩
+     ============================================================ -->
+<div class="loading-screen" id="loading">
+  <div class="spinner"></div>
+  <div class="l-text" id="loadingText">AI 评估中...</div>
+  <div class="l-sub">请稍候，正在分析对话表现</div>
+</div>
+
+<!-- ============================================================
+     报告页
+     ============================================================ -->
+<div id="report" class="screen report"></div>
+
+<script>
+/* ============================================================
+   全局状态 S
+   ============================================================ */
+var S = {
+  key: "",        // DeepSeek API Key
+  name: "",       // 店员名字
+  scenario: null, // 当前场景对象
+  msgs: [],       // [{role:"user"|"assistant", content:"..."}]
+  round: 0,       // 对话轮数（店员发言次数）
+  score: null,    // 评估结果
+  feishuHook: ""  // 飞书 Webhook 地址（可选）
+};
+
+/* ============================================================
+   23个场景定义 SC
+   id, emoji, name, desc, tag, cat, customerName, customerEmoji, script
+   ============================================================ */
+var SC = [
+  // === 3C回收 (8个) ===
+  {id:"sc_xianyu",emoji:"🐟",name:"闲鱼比价",desc:"顾客说闲鱼上能卖更高价",tag:"3C回收",cat:"3c",
+   customerName:"小王",customerEmoji:"🙋",
+   script:"你是一位年轻顾客，拿了一台iPhone 15 Pro来回收。你已经在闲鱼上查过价格，觉得爱回收的报价太低。你说闲鱼上同款能多卖500块，质疑爱回收的定价。你比较犹豫，既想省事又想多卖钱。拒绝两次后再考虑。"},
+  {id:"sc_zhuanzhuan",emoji:"🔄",name:"转转比价",desc:"顾客拿转转APP报价来比较",tag:"3C回收",cat:"3c",
+   customerName:"小李",customerEmoji:"👨",
+   script:"你是一位中年男顾客，拿着手机给店员看转转APP上的报价，说转转回收价比爱回收高200多。你觉得都是回收平台，价格应该差不多。你比较在意这200块差价，但也不确定转转的报价是否靠谱。"},
+  {id:"sc_compete",emoji:"🏪",name:"竞品到店比价",desc:"顾客刚从其他回收店过来比价",tag:"3C回收",cat:"3c",
+   customerName:"老张",customerEmoji:"👴",
+   script:"你是一位50多岁的顾客，刚从街对面的手机回收店过来，那家店报的价格比爱回收高150。你不太懂手机参数，就是觉得哪里便宜去哪里。你说那家店还送贴膜，问爱回收有没有什么赠品或优惠。"},
+  {id:"sc_screen",emoji:"📱",name:"屏幕瑕疵",desc:"顾客不认可屏幕划痕扣款",tag:"3C回收",cat:"3c",
+   customerName:"小陈",customerEmoji:"👩",
+   script:"你拿来一台iPhone 14，屏幕上有几道细小划痕。店员说屏幕有划痕要扣80块，你觉得很不合理，因为日常使用根本看不出来。你觉得这是鸡蛋里挑骨头，故意压价。你情绪有点激动。"},
+  {id:"sc_drop",emoji:"💥",name:"磕碰掉漆",desc:"顾客认为边框磕碰不影响使用",tag:"3C回收",cat:"3c",
+   customerName:"阿强",customerEmoji:"💪",
+   script:"你的手机边框有一处明显磕碰掉漆，但你一直戴壳使用，觉得不影响功能。店员说磕碰要扣120，你觉得太夸张了，手机功能完全正常。你说这种外观问题根本不影响二手销售。"},
+  {id:"sc_lowprice",emoji:"📉",name:"价格太低",desc:"顾客对整体报价非常不满",tag:"3C回收",cat:"3c",
+   customerName:"大刘",customerEmoji:"😤",
+   script:"你拿来一台用了半年的安卓旗舰机，买的时候花了5000多。店员检测后报了1800的回收价，你非常震惊和不满，觉得贬值太快了。你质疑检测结果是否有问题，情绪比较激动但不失礼。"},
+  {id:"sc_privacy",emoji:"🔒",name:"隐私安全",desc:"顾客担心数据泄露风险",tag:"3C回收",cat:"3c",
+   customerName:"周姐",customerEmoji:"👩‍💼",
+   script:"你是一位比较谨慎的女性顾客，准备回收旧手机但非常担心隐私泄露。你手机上有很多私人照片和工作文件，问店员数据清除是否真的安全。你说网上看到过数据被恢复的新闻，很担心。"},
+  {id:"sc_leave",emoji:"🚶",name:"离店比价",desc:"顾客说再去别家看看再决定",tag:"3C回收",cat:"3c",
+   customerName:"小赵",customerEmoji:"🧑",
+   script:"你听完报价后觉得还行但不算特别满意，说想再去旁边商场里的回收店看看。你不是不想回收，就是想货比三家确认没被坑。你希望店员给你一个现在就成交的理由。"},
+
+  // === 严选销售 (6个) ===
+  {id:"sc_breakice",emoji:"🧊",name:"破冰搭话",desc:"顾客进店浏览，需要主动引导",tag:"严选销售",cat:"yx",
+   customerName:"小周",customerEmoji:"👩",
+   script:"你是一位在商场闲逛的女性顾客，路过店面时被橱窗展示吸引，进店随便看看。你不确定自己需要什么，只是觉得有些产品看起来不错。你有点社恐，不太会主动开口，需要店员引导才能聊起来。"},
+  {id:"sc_need",emoji:"🔍",name:"挖掘需求",desc:"顾客需求模糊，需深度挖掘",tag:"严选销售",cat:"yx",
+   customerName:"刘哥",customerEmoji:"🧔",
+   script:"你进店说想看看手机，但不确定要买新的还是二手的。你的预算大概在3000左右，平时主要用手机拍照和看视频。你对手机参数不太了解，需要店员帮你分析比对。不要一上来就做决定。"},
+  {id:"sc_compete2",emoji:"⚖",name:"比价异议",desc:"顾客说京东/拼多多更便宜",tag:"严选销售",cat:"yx",
+   customerName:"小明",customerEmoji:"🧑‍🦱",
+   script:"你看中了一台严选iPhone 14 Pro，但打开京东说上面同款便宜了300块。你觉得店里应该能比线上便宜才对，问店员为什么差价这么大。你确实想买，但不想多花冤枉钱。"},
+  {id:"sc_price2",emoji:"💰",name:"价格异议",desc:"顾客觉得严选价格定位偏高",tag:"严选销售",cat:"yx",
+   customerName:"老周",customerEmoji:"👨‍🦰",
+   script:"你看了一圈觉得严选的品相不错，但价格比预期高了三四百。你说这些也就是二手手机，不理解为什么卖这么贵。你问了几个型号的价格都觉得偏高，有点想走了。"},
+  {id:"sc_close",emoji:"🤝",name:"促单成交",desc:"顾客犹豫不决，需要促成下单",tag:"严选销售",cat:"yx",
+   customerName:"小杨",customerEmoji:"👩‍🦰",
+   script:"你已经看中一台手机，反复看了好几次，各方面都觉得满意，但就是下不了决心付款。你担心买回去发现问题，也担心售后没保障。你在纠结要不要今天就买。"},
+  {id:"sc_after",emoji:"📞",name:"售后回访",desc:"老顾客来反馈使用中的小问题",tag:"严选销售",cat:"yx",
+   customerName:"老赵",customerEmoji:"👴",
+   script:"你一个月前买了一台严选手机，发现电池掉电比预期快。你不确定这是不是正常现象，有点怀疑是不是电池本身就老化。你不太满意但又不想太为难店员。"},
+
+  // === 配件销售 (6个) ===
+  {id:"sc_tempered",emoji:"🛡",name:"钢化膜",desc:"顾客觉得钢化膜都差不多",tag:"配件销售",cat:"pj",
+   customerName:"大林",customerEmoji:"🙍",
+   script:"你刚买了新手机，店员推荐钢化膜。你觉得钢化膜在网上9.9包邮一大把，店里卖几十块太贵了。你觉得膜这种东西没什么技术含量，贵的便宜的都一样用。你不想在膜上花太多钱。"},
+  {id:"sc_cutfilm",emoji:"✂",name:"裁切膜",desc:"顾客不了解裁切膜的优势",tag:"配件销售",cat:"pj",
+   customerName:"小林",customerEmoji:"👩‍🦱",
+   script:"店员推荐裁切膜，你不太懂这是什么。你说外面贴膜都是现成的钢化膜，这个裁切膜听起来很麻烦。你担心裁切膜贴不好会翘边，也担心膜的质量不如品牌钢化膜。"},
+  {id:"sc_case",emoji:"📦",name:"手机壳",desc:"顾客对手机壳需求不明确",tag:"配件销售",cat:"pj",
+   customerName:"小马",customerEmoji:"🧑‍💻",
+   script:"你来看手机壳但拿不定主意。店里有几十种壳，透明的、硅胶的、防摔的，你眼花缭乱。你平时比较粗心，手机经常摔，但又不想要太丑太厚的壳。你需要店员给你专业推荐。"},
+  {id:"sc_charger",emoji:"🔌",name:"充电器",desc:"顾客觉得快充头太贵",tag:"配件销售",cat:"pj",
+   customerName:"小唐",customerEmoji:"🙎",
+   script:"你看到店里的快充头卖129，觉得太贵了。你说网上买个20块钱的充电头一样能用，没必要买这么贵的。你不理解快充头为什么这么贵，觉得是智商税。你的旧充电头确实充得很慢。"},
+  {id:"sc_powerbank",emoji:"🔋",name:"充电宝",desc:"顾客对充电宝容量和快充有疑问",tag:"配件销售",cat:"pj",
+   customerName:"阿杰",customerEmoji:"🙆",
+   script:"你想买个充电宝但市面上的种类太多了。你平时出差多，需要一个大容量的，但又不想太重。你不确定快充充电宝是不是真的快，担心买回来充手机还是很慢。需要店员给你专业的建议。"},
+  {id:"sc_cable",emoji:"🔗",name:"数据线",desc:"顾客觉得数据线没必要买贵的",tag:"配件销售",cat:"pj",
+   customerName:"小胡",customerEmoji:"🤷",
+   script:"你的数据线坏了来买新的，看到店里最便宜的也要39块，觉得太贵。你说外面地摊上10块钱3根，用着也没区别。你不理解数据线为什么差价这么大。你之前廉价线用一两个月就坏但又觉得无所谓。"},
+
+  // === 延保销售 (3个) ===
+  {id:"sc_ybintro",emoji:"🛡",name:"首次介绍",desc:"顾客第一次了解延保服务",tag:"延保销售",cat:"yb",
+   customerName:"小孙",customerEmoji:"🙋‍♀",
+   script:"你买了新手机后店员推荐延保服务，你之前没听说过这个。你觉得手机本身就有保修，延保是额外花钱买不必要的东西。你不太相信延保真的能派上用场，觉得大概率是白花钱。"},
+  {id:"sc_ybprice",emoji:"💳",name:"价格异议",desc:"顾客觉得延保费用不划算",tag:"延保销售",cat:"yb",
+   customerName:"老马",customerEmoji:"🧓",
+   script:"店员给你介绍了延保，你觉得一年的延保费都快赶上修一次手机的钱了。你算了一下觉得不划算，除非手机一定会坏。你说自己用手机很爱惜，从来没摔过，不需要延保。"},
+  {id:"sc_ybclaim",emoji:"📋",name:"理赔疑虑",desc:"顾客担心延保理赔流程复杂",tag:"延保销售",cat:"yb",
+   customerName:"小吴",customerEmoji:"🙎‍♀",
+   script:"你对延保有点兴趣但担心理赔很麻烦。你说身边有朋友买了类似的保险，真到用的时候各种推脱，提交材料一大堆。你觉得买的时候说得天花乱坠，理赔的时候各种卡你。"}
+];
+
+/* ============================================================
+   知识库 STDS（标准话术要点，用于评估参考）
+   ============================================================ */
+var STDS = {
+  // 3C回收
+  sc_xianyu: "爱回收提供专业检测、当场付款、数据安全清除；闲鱼个人交易存在买家到手刀、调包、退货等风险；时间成本也是成本",
+  sc_zhuanzhuan: "转转线上估价仅供参考，实际检测后可能压价；爱回收当面检测透明，价格确认即付款；有实体门店售后无忧",
+  sc_compete: "爱回收拥有专业的质检体系和标准化流程；全国连锁品牌，价格透明；售后有保障，检测设备专业",
+  sc_screen: "屏幕划痕影响二次销售的美观度和成色评级；回收价格根据实际成色客观评估；爱回收的扣款标准透明公开",
+  sc_drop: "磕碰属于外观损伤，影响成色等级评定；成色等级直接决定二手售价；所有回收平台都会对外观进行评估",
+  sc_lowprice: "安卓机型贬值确实较快，这是市场行情；爱回收根据实时二手市场价格动态调整；检测维度包括外观、功能、屏幕、电池等全面评估",
+  sc_privacy: "爱回收有专业的数据清除流程，达到军工级标准；现场可以看到清除过程；如不放心可自行先恢复出厂设置",
+  sc_leave: "爱回收价格已是同商圈最优；其他店可能存在虚高报价现场压价的情况；今天回收有额外活动",
+  // 严选销售
+  sc_breakice: "主动了解顾客使用场景和偏好；开放性问题引导顾客表达需求；展示热门机型吸引兴趣",
+  sc_need: "从使用场景出发推荐机型；拍照需求推荐影像强的机型；通过提问逐步缩小选择范围",
+  sc_compete2: "严选机经过专业检测和翻新，品质有保障；有实体店售后更省心；线上机型可能存在成色不符的情况",
+  sc_price2: "严选机经过128项专业检测；7天无理由退换+180天质保；只收成色好的机器，品质放心",
+  sc_close: "明确回应顾客的具体疑虑；强调售后保障打消顾虑；适时给出限时优惠促成决策",
+  sc_after: "耐心倾听顾客的反馈；合理解释电池的正常衰减范围；提供免费检测确认问题",
+  // 配件销售
+  sc_tempered: "品牌钢化膜透光率高、疏油层好、防指纹；劣质膜易碎、留胶、影响触控灵敏度；好的膜能用一年以上",
+  sc_cutfilm: "裁切膜全包裹无白边；软膜更贴合曲面屏；防蓝光、磨砂等多种材质可选",
+  sc_case: "根据使用习惯推荐；经常摔手机推荐防摔壳；追求手感推荐超薄壳；透明壳不发黄是品质关键",
+  sc_charger: "品牌快充头有安全认证和智能温控；劣质充电头发热严重、伤电池、有安全隐患；支持多种快充协议通用性强",
+  sc_powerbank: "大容量选20000mAh以上；快充协议要和手机匹配；轻薄和容量需要取舍",
+  sc_cable: "品牌线有MFi认证不弹窗；编织线更耐用不易断；劣质线充电慢、伤电池、几个月就坏",
+  // 延保销售
+  sc_ybintro: "延保在原厂保修基础上延长保障；意外损坏也在保修范围内；一次意外维修就值回延保费",
+  sc_ybprice: "对比换屏换主板费用，延保费只是零头；延保等于给手机上保险；用不上最好，但万一用上省大钱",
+  sc_ybclaim: "理赔流程简单，到店即可处理；多数情况当天完成；全国门店通赔通用"
+};
+
+/* ============================================================
+   工具函数
+   ============================================================ */
+function $(id){return document.getElementById(id)}
+function pad2(n){var s=""+n;return s.length<2?"0"+s:s}  // 兼容飞书,不用padStart
+function show(id){$(id).classList.add("active");if(id==="home")renderHome()}
+function hideAll(){document.querySelectorAll(".screen").forEach(function(el){el.classList.remove("active")})}
+function go(id){hideAll();show(id)}
+
+function fmtDate(){
+  var d=new Date();return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())+" "+pad2(d.getHours())+":"+pad2(d.getMinutes())
+}
+
+function escHtml(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
+
+// localStorage 安全读写
+function lsGet(k){try{return localStorage.getItem("ahs_"+k)||""}catch(e){return""}}
+function lsSet(k,v){try{localStorage.setItem("ahs_"+k,v)}catch(e){}}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+function init(){
+  S.key = lsGet("key");
+  S.name = lsGet("name");
+  S.feishuHook = lsGet("feishuHook");
+  if(S.key){$("apiKeyW").value=S.key;$("apiKeyH").value=S.key}
+  if(S.feishuHook){$("hookInputW").value=S.feishuHook;$("hookInputH").value=S.feishuHook}
+  if(S.name){
+    $("nameInput").value=S.name;
+    $("greetName").textContent=S.name;
+    go("home");
+  } else {
+    go("welcome");
+  }
+}
+
+/* ============================================================
+   名字 & API Key
+   ============================================================ */
+function confirmName(){
+  var n=$("nameInput").value.trim();
+  if(!n){alert("请输入你的名字");return}
+  S.name=n;lsSet("name",n);$("greetName").textContent=n;
+  // 同时检查 API Key
+  var k=$("apiKeyW").value.trim();
+  if(k){S.key=k;lsSet("key",k)}
+  go("home");
+}
+
+function toggleApiBar(){
+  var bar=$("apiBarW");
+  bar.classList.toggle("show");
+  if(bar.classList.contains("show")) $("apiKeyW").focus();
+}
+function toggleApiBarH(){
+  var bar=$("apiBarH");
+  bar.classList.toggle("show");
+  if(bar.classList.contains("show")) $("apiKeyH").focus();
+}
+function saveApiKey(from){
+  var k=(from==="w"?$("apiKeyW"):$("apiKeyH")).value.trim();
+  var h=(from==="w"?$("hookInputW"):$("hookInputH")).value.trim();
+  if(!k){alert("请输入 API Key");return}
+  S.key=k;lsSet("key",k);
+  if(h){S.feishuHook=h;lsSet("feishuHook",h)}
+  $("apiKeyW").value=k;$("apiKeyH").value=k;
+  $("hookInputW").value=S.feishuHook;$("hookInputH").value=S.feishuHook;
+  alert("已保存"+(h?"（含飞书推送）":"")+" ✓");
+  $("apiBarW").classList.remove("show");
+  $("apiBarH").classList.remove("show");
+}
+
+/* ============================================================
+   主页渲染
+   ============================================================ */
+function renderHome(){
+  // 标签
+  var cats=[
+    {key:"all",label:"全部",emoji:"🎯"},
+    {key:"3c",label:"3C回收",emoji:"📱"},
+    {key:"yx",label:"严选销售",emoji:"⭐"},
+    {key:"pj",label:"配件销售",emoji:"🔧"},
+    {key:"yb",label:"延保销售",emoji:"🛡"}
+  ];
+  var tHtml="";
+  cats.forEach(function(c,i){
+    tHtml+='<div class="tab'+(i===0?" on":"")+'" data-cat="'+c.key+'" onclick="filterCat(this,\''+c.key+'\')">'
+      +'<span class="tab-emoji">'+c.emoji+'</span>'+c.label+'</div>';
+  });
+  $("tabs").innerHTML=tHtml;
+
+  renderScards("all");
+}
+
+function renderScards(cat){
+  var list=cat==="all"?SC:SC.filter(function(s){return s.cat===cat});
+  var h="";
+  list.forEach(function(s){
+    h+='<div class="scard" onclick="startPractice(\''+s.id+'\')">'
+      +'<div class="sc-emoji">'+s.customerEmoji+'</div>'
+      +'<div class="sc-info"><div class="sc-name">'+s.emoji+' '+s.name+'</div>'
+      +'<div class="sc-desc">'+s.desc+'</div>'
+      +'<span class="sc-tag">'+s.tag+'</span></div>'
+      +'<div class="sc-arr">›</div></div>';
+  });
+  $("scardList").innerHTML=h||'<div style="text-align:center;padding:40px;color:var(--t3)">暂无场景</div>';
+}
+
+function filterCat(el,cat){
+  document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on")});
+  el.classList.add("on");
+  renderScards(cat);
+}
+
+function randomScenario(){
+  var idx=Math.floor(Math.random()*SC.length);
+  startPractice(SC[idx].id);
+}
+
+/* ============================================================
+   开始对练
+   ============================================================ */
+function startPractice(id){
+  if(!S.key){alert("请先设置 DeepSeek API Key（点击页面右上角 ⚙）");return}
+  var sc=null;
+  for(var i=0;i<SC.length;i++){if(SC[i].id===id){sc=SC[i];break}}
+  if(!sc)return;
+  S.scenario=sc;S.msgs=[];S.round=0;S.score=null;
+  $("chatEmoji").textContent=sc.customerEmoji;
+  $("chatTitle").textContent=sc.emoji+" "+sc.name;
+  $("chatCust").textContent=sc.customerName+"（AI 顾客）";
+  $("roundCount").textContent="0";
+  $("roundCount").className="round-badge";
+  $("msgList").innerHTML="";
+  $("chatInput").value="";
+  go("chat");
+  $("chatInput").focus();
+
+  // 添加系统开场提示
+  addSysTip("场景："+sc.desc+"\n\n请向 "+sc.customerEmoji+" "+sc.customerName+" 发起对话");
+
+  // AI 顾客不主动开口，等店员先说
+}
+
+function addSysTip(txt){
+  $("msgList").innerHTML+='<div class="msg"><div class="sys-tip">'+escHtml(txt).replace(/\n/g,"<br>")+'</div></div>';
+  scrollMsgs();
+}
+
+/* ============================================================
+   发送消息 & AI对话
+   ============================================================ */
+function sendMsg(){
+  if(!S.scenario)return;
+  var input=$("chatInput"),txt=input.value.trim();
+  if(!txt)return;
+  // 禁用发送
+  $("sendBtn").disabled=true;input.disabled=true;
+
+  // 添加用户消息
+  addMsg("user",txt);
+  S.msgs.push({role:"user",content:txt});
+  S.round++;
+  $("roundCount").textContent=S.round;
+  if(S.round<3) $("roundCount").className="round-badge warn";
+  else $("roundCount").className="round-badge";
+  input.value="";
+  scrollMsgs();
+
+  // 调 DeepSeek API 生成顾客回复
+  callAI(S.msgs,false,function(reply){
+    $("sendBtn").disabled=false;input.disabled=false;
+    if(reply){
+      addMsg("assistant",reply);
+      S.msgs.push({role:"assistant",content:reply});
+    } else {
+      addSysTip("⚠ AI 顾客暂时不在线，请稍后再试");
+    }
+    scrollMsgs();
+    input.focus();
+  });
+}
+
+function addMsg(role,text){
+  var avatar,cls=role;
+  if(role==="user"){
+    avatar=S.name.charAt(0)||"店";
+  } else {
+    avatar=S.scenario.customerEmoji;
+  }
+  $("msgList").innerHTML+='<div class="msg '+cls+'">'
+    +'<div class="avatar">'+avatar+'</div>'
+    +'<div class="bubble">'+escHtml(text)+'</div></div>';
+}
+
+function scrollMsgs(){
+  var el=$("msgList");
+  setTimeout(function(){el.scrollTop=el.scrollHeight},100);
+}
+
+/* ============================================================
+   DeepSeek API 调用
+   ============================================================ */
+function callAI(msgs,isEval,callback){
+  var sysPrompt;
+  if(isEval){
+    sysPrompt=buildEvalPrompt();
+  } else {
+    sysPrompt=buildCustomerPrompt();
+  }
+  var fullMsgs=[{role:"system",content:sysPrompt}].concat(msgs);
+
+  var xhr=new XMLHttpRequest();
+  xhr.open("POST","https://api.deepseek.com/chat/completions",true);
+  xhr.setRequestHeader("Content-Type","application/json");
+  xhr.setRequestHeader("Authorization","Bearer "+S.key);
+  xhr.timeout=30000;
+
+  var timedOut=false;
+  var timeoutId=setTimeout(function(){timedOut=true;xhr.abort();callback(null)},30000);
+
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState!==4)return;
+    clearTimeout(timeoutId);
+    if(timedOut)return;
+    if(xhr.status===200){
+      try{
+        var resp=JSON.parse(xhr.responseText);
+        var content=resp.choices&&resp.choices[0]&&resp.choices[0].message
+          ?resp.choices[0].message.content:"";
+        callback(content.trim());
+      }catch(e){callback(null)}
+    } else {
+      var err="";
+      try{err=JSON.parse(xhr.responseText).error.message||""}catch(e2){}
+      console.error("API Error:",xhr.status,err);
+      callback(null);
+    }
+  };
+
+  var body=JSON.stringify({
+    model:"deepseek-chat",
+    messages:fullMsgs,
+    temperature:isEval?0.3:0.8,
+    max_tokens:isEval?1200:200
+  });
+  xhr.send(body);
+}
+
+/* ============================================================
+   构建 AI 顾客 Prompt
+   ============================================================ */
+function buildCustomerPrompt(){
+  var sc=S.scenario;
+  return [
+    "## 角色",
+    "你是 "+sc.customerName+"（"+sc.customerEmoji+"），一位真实顾客，正在爱回收门店与店员对话。",
+    "",
+    "## 场景背景",
+    sc.script,
+    "",
+    "## 铁律（必须严格遵守）",
+    "1. 禁止主动提延保、配件、严选、手机膜、手机壳、充电器、充电宝、数据线——除非店员先提",
+    "2. 店员推荐产品：第1次找合理理由拒绝，第2次换不同角度仍拒绝，第3次店员讲得特别专业详细才有松动空间",
+    "3. 店员如果用「回收加价换你买配件/延保/严选」这种诱导方式 → 坚决拒绝、表达不满",
+    "4. 店员用「可以多给你一点回收价但你得买XX」 → 坚决拒绝、不满",
+    "5. 每次回复15-50字，口语化，像真人聊天",
+    "6. 根据店员上一句话的具体内容来回应，不要自说自话",
+    "7. 不要复述场景描述，要有真实顾客的随机感和情绪",
+    "8. 回复中不要带动作描写（如「笑了笑」「皱了皱眉」），纯文字对话",
+    "",
+    "## 当前状态",
+    "这是对话的第"+(S.round+1)+"轮。请根据店员刚才说的话给出自然的口语回复。"
+  ].join("\n");
+}
+
+/* ============================================================
+   构建评估 Prompt
+   ============================================================ */
+function buildEvalPrompt(){
+  var sc=S.scenario;
+  var std=STDS[sc.id]||"";
+  return [
+    "## 角色",
+    "你是爱回收门店对话质量评估专家。请根据以下标准对店员的表现进行评分。",
+    "",
+    "## 场景信息",
+    "场景："+sc.name+"（"+sc.tag+"）",
+    "顾客："+sc.customerName,
+    "场景描述："+sc.desc,
+    "",
+    "## 知识库参考话术",
+    std,
+    "",
+    "## 评估维度（各25分，总分100）",
+    "1. 准确性（25分）：是否准确理解顾客需求，回答是否专业、信息准确",
+    "2. 说服力（25分）：话术是否有说服力，能否有效化解顾客异议",
+    "3. 应变力（25分）：能否灵活应对顾客的各种问题和质疑",
+    "4. 合规性（25分）：是否遵守销售规范，不违规诱导",
+    "",
+    "## 合规红线（触发即合规性0分）",
+    "店员主动说「回收价加一点，你买个配件/延保/严选」或以加价换购买 → 合规性0分",
+    "注意：顾客自己主动提出要加钱、自己主动要买配件/延保，不算违规",
+    "",
+    "## 禁语（出现在对话中合规性不超过5分）",
+    "「您去其他家看看」「标准就这样」「跟原装一样」「官方可查」",
+    "",
+    "## 等级",
+    "≥95 优秀 / ≥90 良好 / ≥85 合格 / ＜85 加油",
+    "",
+    "## 输出格式（严格JSON）",
+    "返回如下JSON，不要markdown代码块，只要纯JSON：",
+    '{',
+    '  "accuracy": 数字0-25,',
+    '  "persuasion": 数字0-25,',
+    '  "adaptability": 数字0-25,',
+    '  "compliance": 数字0-25,',
+    '  "total": 四项之和,',
+    '  "grade": "excellent|good|pass|fail",',
+    '  "summary": "30字以内的总评",',
+    '  "strengths": ["亮点1","亮点2"],',
+    '  "weaknesses": ["不足1","不足2"],',
+    '  "suggestion": "1-2句改进建议",',
+    '  "redline": true/false,',
+    '  "forbidden": true/false',
+    '}'
+  ].join("\n");
+}
+
+/* ============================================================
+   结束对练 & 评估
+   ============================================================ */
+function endPractice(){
+  if(S.round<3){
+    alert("对话轮数不足3轮，再多聊几句吧！\n（至少3轮对话才能触发AI评估）");
+    return;
+  }
+  if(!confirm("确定结束对练吗？\n结束后将自动生成 AI 评估报告"))return;
+
+  showLoading("AI 评估中...","正在分析你的对话表现");
+
+  callAI(S.msgs,true,function(raw){
+    hideLoading();
+    var score=parseScore(raw);
+    S.score=score;
+    renderReport(score);
+    go("report");
+  });
+}
+
+function parseScore(raw){
+  var defaults={
+    accuracy:0,persuasion:0,adaptability:0,compliance:0,
+    total:0,grade:"fail",summary:"评估解析失败，请重试",
+    strengths:[],weaknesses:[],suggestion:"",redline:false,forbidden:false
+  };
+  try{
+    var parsed=JSON.parse(raw);
+    var score={
+      accuracy:Math.max(0,Math.min(25,Number(parsed.accuracy)||0)),
+      persuasion:Math.max(0,Math.min(25,Number(parsed.persuasion)||0)),
+      adaptability:Math.max(0,Math.min(25,Number(parsed.adaptability)||0)),
+      compliance:Math.max(0,Math.min(25,Number(parsed.compliance)||0)),
+      total:0,grade:"fail",
+      summary:parsed.summary||"",
+      strengths:parsed.strengths||[],
+      weaknesses:parsed.weaknesses||[],
+      suggestion:parsed.suggestion||"",
+      redline:!!parsed.redline,
+      forbidden:!!parsed.forbidden
+    };
+    score.total=score.accuracy+score.persuasion+score.adaptability+score.compliance;
+    if(score.total>=95)score.grade="excellent";
+    else if(score.total>=90)score.grade="good";
+    else if(score.total>=85)score.grade="pass";
+    else score.grade="fail";
+    return score;
+  }catch(e){
+    return defaults;
+  }
+}
+
+/* ============================================================
+   加载动画
+   ============================================================ */
+function showLoading(title,sub){
+  $("loadingText").textContent=title;
+  $("loading").querySelector(".l-sub").textContent=sub;
+  $("loading").classList.add("show");
+}
+function hideLoading(){$("loading").classList.remove("show")}
+
+/* ============================================================
+   渲染报告
+   ============================================================ */
+function renderReport(sc){
+  var gradeMap={excellent:"优秀",good:"良好",pass:"合格",fail:"加油"};
+  var gradeClsMap={excellent:"excellent",good:"good",pass:"pass",fail:"fail"};
+  var gradeEmoji={excellent:"🏆",good:"👍",pass:"💪",fail:"📚"};
+
+  var dims=[
+    {key:"accuracy",label:"准确性",barCls:"a"},
+    {key:"persuasion",label:"说服力",barCls:"b"},
+    {key:"adaptability",label:"应变力",barCls:"c"},
+    {key:"compliance",label:"合规性",barCls:"d"}
+  ];
+
+  var scoresHtml="";
+  dims.forEach(function(d){
+    var v=sc[d.key];
+    var pct=Math.round(v/25*100);
+    scoresHtml+='<div class="r-score-row">'
+      +'<div class="r-score-label">'+d.label+'</div>'
+      +'<div class="r-score-bar-wrap"><div class="r-score-bar '+d.barCls+'" style="width:'+pct+'%"></div></div>'
+      +'<div class="r-score-val">'+v+'</div></div>';
+  });
+
+  var flagsHtml="";
+  if(sc.redline) flagsHtml+='<div class="r-flag red">🚫 触发合规红线 — 合规性0分</div>';
+  if(sc.forbidden) flagsHtml+='<div class="r-flag yellow">⚠ 出现禁语 — 合规性不超过5分</div>';
+  if(!sc.redline&&!sc.forbidden) flagsHtml+='<div class="r-flag green">✅ 未触发合规红线或禁语</div>';
+
+  var sw=[];
+  if(sc.strengths&&sc.strengths.length) sc.strengths.forEach(function(s){sw.push("✓ "+s)});
+  if(sc.weaknesses&&sc.weaknesses.length) sc.weaknesses.forEach(function(w){sw.push("△ "+w)});
+
+  $("report").innerHTML=''
+    +'<div class="r-header">'
+      +'<div class="r-emoji">'+gradeEmoji[sc.grade]+'</div>'
+      +'<div class="r-grade '+gradeClsMap[sc.grade]+'">'+sc.total+'分</div>'
+      +'<div class="r-sub">等级：'+gradeMap[sc.grade]+' · '+S.scenario.emoji+' '+S.scenario.name+'</div>'
+      +'<div style="font-size:12px;color:var(--t3);margin-top:4px">'+fmtDate()+' · '+S.name+' · '+S.round+'轮对话</div>'
+    +'</div>'
+    +'<div class="r-body">'
+      +'<div class="r-card">'
+        +'<div class="r-card-title">📊 四维评估</div>'
+        +scoresHtml
+        +(sc.summary?'<div class="r-comment">💬 '+escHtml(sc.summary)+'</div>':'')
+      +'</div>'
+      +(sw.length?'<div class="r-card">'
+        +'<div class="r-card-title">📝 评价详情</div>'
+        +sw.map(function(s){return '<div style="font-size:13px;color:var(--t2);margin-bottom:4px">'+escHtml(s)+'</div>'}).join("")
+      +'</div>':'')
+      +(sc.suggestion?'<div class="r-card">'
+        +'<div class="r-card-title">💡 改进建议</div>'
+        +'<div style="font-size:13px;color:var(--t2);line-height:1.6">'+escHtml(sc.suggestion)+'</div>'
+      +'</div>':'')
+      +'<div class="r-card">'+flagsHtml+'</div>'
+    +'</div>'
+    +'<div class="r-actions">'
+      +'<button class="btn btn-p" onclick="pushToFeishu()">📤 推送到飞书群</button>'
+      +'<button class="btn btn-o" onclick="backToHome()">返回主页</button>'
+    +'</div>';
+}
+
+/* ============================================================
+   飞书推送
+   ============================================================ */
+function pushToFeishu(){
+  if(!S.score){alert("没有评估数据");return}
+  if(!S.feishuHook){alert("请先设置飞书 Webhook 地址\n\n点击页面右上角 ⚙ 图标进行设置");return}
+
+  var sc=S.score;
+  var gradeMap={excellent:"优秀",good:"良好",pass:"合格",fail:"加油"};
+  var gradeColor={excellent:"green",good:"blue",pass:"orange",fail:"red"};
+  var color=gradeColor[sc.grade]||"default";
+
+  var body={
+    msg_type:"interactive",
+    card:{
+      config:{wide_screen_mode:false},
+      header:{title:{tag:"plain_text",content:"AI 对练报告 - "+escHtml(S.name)},template:color},
+      elements:[
+        {tag:"div",text:{tag:"lark_md",content:"**"+escHtml(S.name)+"**  "+S.scenario.emoji+" "+escHtml(S.scenario.name)+"  "+fmtDate()}},
+        {tag:"hr"},
+        {tag:"div",text:{tag:"lark_md",content:"**总分："+sc.total+"分**（"+gradeMap[sc.grade]+"）  "+S.round+"轮对话"}},
+        {tag:"div",text:{tag:"lark_md",content:"准确性 "+sc.accuracy+" | 说服力 "+sc.persuasion+" | 应变力 "+sc.adaptability+" | 合规性 "+sc.compliance}},
+        {tag:"hr"},
+        {tag:"div",text:{tag:"lark_md",content:"💬 "+escHtml(sc.summary||"暂无评语")}}
+      ]
+    }
+  };
+
+  if(sc.suggestion){
+    body.card.elements.push({tag:"div",text:{tag:"lark_md",content:"💡 **改进建议**\n"+escHtml(sc.suggestion)}});
+  }
+  if(sc.redline){
+    body.card.elements.push({tag:"div",text:{tag:"lark_md",content:"🚫 **触发合规红线**"}});
+  }
+  if(sc.forbidden){
+    body.card.elements.push({tag:"div",text:{tag:"lark_md",content:"⚠ **出现禁语**"}});
+  }
+  body.card.elements.push({tag:"hr"});
+  body.card.elements.push({tag:"note",elements:[{tag:"plain_text",content:"爱回收 AI 对练 - 自动评估"}]});
+
+  showLoading("推送中...","正在发送报告到飞书群");
+
+  // 直接调用飞书 Webhook（支持 CORS）
+  var xhr=new XMLHttpRequest();
+  xhr.open("POST",S.feishuHook,true);
+  xhr.setRequestHeader("Content-Type","application/json; charset=utf-8");
+  xhr.timeout=15000;
+
+  var timedOut=false;
+  var tid=setTimeout(function(){timedOut=true;xhr.abort();hideLoading();alert("推送超时，请检查网络或 Webhook 地址")},15000);
+
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState!==4)return;
+    clearTimeout(tid);
+    hideLoading();
+    if(timedOut)return;
+    if(xhr.status===200){
+      try{
+        var r=JSON.parse(xhr.responseText);
+        if(r.code===0||r.StatusCode===0)alert("✅ 已推送到飞书群！");
+        else alert("推送返回异常："+JSON.stringify(r).substring(0,100));
+      }catch(e){alert("✅ 推送完成")}
+    } else {
+      alert("推送失败（HTTP "+xhr.status+"）\n请检查 Webhook 地址是否正确");
+    }
+  };
+
+  xhr.send(JSON.stringify(body));
+}
+
+/* ============================================================
+   返回主页
+   ============================================================ */
+function backToHome(){
+  S.scenario=null;S.msgs=[];S.round=0;S.score=null;
+  go("home");
+}
+
+/* ============================================================
+   键盘事件
+   ============================================================ */
+document.addEventListener("keydown",function(e){
+  if(e.key==="Enter"){
+    var ws=document.querySelector(".screen.active");
+    if(!ws)return;
+    if(ws.id==="welcome"){confirmName()}
+    else if(ws.id==="chat"){sendMsg()}
+  }
+});
+
+/* ============================================================
+   启动
+   ============================================================ */
+init();
+</script>
+</body>
+</html>
