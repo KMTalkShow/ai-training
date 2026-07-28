@@ -187,12 +187,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
       <input id="nameInput" type="text" placeholder="请输入你的名字" maxlength="20" autocomplete="off">
     </div>
     <button class="btn btn-p" onclick="confirmName()">开始对练</button>
-    <div class="api-hint" onclick="toggleApiBar()" style="margin-top:8px">⚙ 设置 API Key 和飞书推送</div>
-    <div id="apiBarW" class="api-bar" style="flex-direction:column;align-items:stretch">
-      <input id="apiKeyW" type="password" placeholder="DeepSeek API Key（必填）">
-      <input id="hookInputW" type="text" placeholder="飞书 Webhook 地址（可选，用于推送报告到群）" style="margin-top:6px">
-      <button class="btn btn-s" style="padding:10px 16px;font-size:13px;margin-top:6px" onclick="saveApiKey('w')">保存</button>
-    </div>
   </div>
 </div>
 
@@ -200,12 +194,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
      主页（场景选择）
      ============================================================ -->
 <div id="home" class="screen">
-  <div class="gear" onclick="toggleApiBarH()">⚙</div>
-  <div id="apiBarH" class="api-bar" style="padding:0 16px;flex-direction:column;align-items:stretch">
-    <input id="apiKeyH" type="password" placeholder="DeepSeek API Key（必填）">
-    <input id="hookInputH" type="text" placeholder="飞书 Webhook 地址（可选）" style="margin-top:6px">
-    <button class="btn btn-s" style="padding:10px 16px;font-size:13px;margin-top:6px" onclick="saveApiKey('h')">保存</button>
-  </div>
   <div class="home-header">
     <div class="greet">👋 <b id="greetName"></b>，选择对练场景</div>
     <div class="sub">随机抽题，模拟真实顾客对话</div>
@@ -214,6 +202,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
   <div class="scroll" id="scardList"></div>
   <div class="footer">
     <button class="btn btn-o" style="width:100%" onclick="randomScenario()">🎲 随机抽取一个场景</button>
+    <div id="adminBtn" style="margin-top:8px;display:none">
+      <button class="btn btn-s" style="width:100%" onclick="showAdmin()">📊 管理面板（查看所有对练数据）</button>
+    </div>
   </div>
 </div>
 
@@ -252,6 +243,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
      报告页
      ============================================================ -->
 <div id="report" class="screen report"></div>
+
+<!-- ============================================================
+     管理员看板
+     ============================================================ -->
+<div id="admin" class="screen">
+  <div style="display:flex;align-items:center;gap:10px;padding:8px 0">
+    <div style="font-size:22px;cursor:pointer;padding:4px;color:var(--t2)" onclick="backToHome()">←</div>
+    <div style="font-size:18px;font-weight:700;flex:1">📊 对练管理看板</div>
+  </div>
+  <div id="adminContent" style="flex:1;overflow-y:auto"></div>
+</div>
 
 <script>
 /* ============================================================
@@ -408,15 +410,14 @@ function lsSet(k,v){try{localStorage.setItem("ahs_"+k,v)}catch(e){}}
 function init(){
   var DK="sk-969836081e5f4d22b1f9f1e67bd1bb42";
   var DH="https://open.feishu.cn/open-apis/bot/v2/hook/cee4d923-31a1-46e7-9e2c-e557866514b0";
-  S.key=lsGet("key")||DK;if(!lsGet("key"))lsSet("key",DK);
-  S.feishuHook=lsGet("feishuHook")||DH;if(!lsGet("feishuHook"))lsSet("feishuHook",DH);
+  S.key=DK;lsSet("key",DK);
+  S.feishuHook=DH;lsSet("feishuHook",DH);
   S.name=lsGet("name");
-  if(S.key){$("apiKeyW").value=S.key;$("apiKeyH").value=S.key}
-  if(S.feishuHook){$("hookInputW").value=S.feishuHook;$("hookInputH").value=S.feishuHook}
   if(S.name){
     $("nameInput").value=S.name;
     $("greetName").textContent=S.name;
     go("home");
+    if(S.name==="李家莉"){$("adminBtn").style.display="block"}
     var p=new URLSearchParams(window.location.search);
     var s=p.get("scenario");
     if(s)setTimeout(function(){startPractice(s)},500);
@@ -430,10 +431,10 @@ function confirmName(){
   var n=$("nameInput").value.trim();
   if(!n){alert("请输入你的名字");return}
   S.name=n;lsSet("name",n);$("greetName").textContent=n;
-  // 同时检查 API Key
-  var k=$("apiKeyW").value.trim();
-  if(k){S.key=k;lsSet("key",k)}
   go("home");
+  // 李家莉显示管理面板入口
+  if(n==="李家莉"){$("adminBtn").style.display="block"}
+  else{$("adminBtn").style.display="none"}
 }
 
 function toggleApiBar(){
@@ -845,9 +846,31 @@ function renderReport(sc){
 /* ============================================================
    飞书推送
    ============================================================ */
+function saveHistory(){
+  var rec={
+    name:S.name,
+    scenario:S.scenario.name,
+    cat:S.scenario.tag,
+    total:S.score.total,
+    grade:S.score.grade,
+    accuracy:S.score.accuracy,
+    persuasion:S.score.persuasion,
+    adaptability:S.score.adaptability,
+    compliance:S.score.compliance,
+    redline:S.score.redline,
+    forbidden:S.score.forbidden,
+    rounds:S.round,
+    time:new Date().toISOString()
+  };
+  var h=[];
+  try{h=JSON.parse(localStorage.getItem("ahs_history")||"[]")}catch(e){}
+  h.push(rec);
+  localStorage.setItem("ahs_history",JSON.stringify(h));
+}
+
 function pushToFeishu(){
   if(!S.score){alert("没有评估数据");return}
-  if(!S.feishuHook){alert("请先设置飞书 Webhook 地址\n\n点击页面右上角 ⚙ 图标进行设置");return}
+  saveHistory();
 
   var sc=S.score;
   var gradeMap={excellent:"优秀",good:"良好",pass:"合格",fail:"加油"};
@@ -918,6 +941,7 @@ function pushToFeishu(){
 function backToHome(){
   S.scenario=null;S.msgs=[];S.round=0;S.score=null;
   go("home");
+  if(S.name==="李家莉"){$("adminBtn").style.display="block"}
 }
 
 /* ============================================================
@@ -988,6 +1012,91 @@ function stopMic(){
   if(recognition){
     try{recognition.stop()}catch(e){}
   }
+}
+
+/* ============================================================
+   管理员看板
+   ============================================================ */
+function showAdmin(){
+  var h=[];
+  try{h=JSON.parse(localStorage.getItem("ahs_history")||"[]")}catch(e){}
+  if(!h.length){$("adminContent").innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--t3)">暂无对练记录<br><br>员工完成对练并推送后，数据将汇总在此</div>';go("admin");return}
+
+  // 统计
+  var total=h.length,passed=0,failed=0,redlines=0;
+  var people={},cats={};
+  h.forEach(function(r){
+    if(r.grade!=="fail")passed++;else failed++;
+    if(r.redline)redlines++;
+    if(!people[r.name])people[r.name]={total:0,passed:0,scores:[]};
+    people[r.name].total++;
+    if(r.grade!=="fail")people[r.name].passed++;
+    people[r.name].scores.push(r.total);
+    if(!cats[r.cat])cats[r.cat]={total:0,passed:0};
+    cats[r.cat].total++;
+    if(r.grade!=="fail")cats[r.cat].passed++;
+  });
+
+  var rate=total?(passed/total*100).toFixed(1):"0.0";
+  var gradeMap={excellent:"优秀",good:"良好",pass:"合格",fail:"加油"};
+
+  var html='<div style="padding:16px">';
+  // 总览卡片
+  html+='<div class="r-card"><div class="r-card-title">📈 总览</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  html+='<div style="background:#E8F8F0;padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--c1)">'+total+'</div><div style="font-size:11px;color:var(--t2)">总对练次数</div></div>';
+  html+='<div style="background:#F0F5FF;padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--c3)">'+rate+'%</div><div style="font-size:11px;color:var(--t2)">通过率</div></div>';
+  html+='<div style="background:#FFFBE6;padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--c2)">'+passed+'</div><div style="font-size:11px;color:var(--t2)">通过</div></div>';
+  html+='<div style="background:#FFF1F0;padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--c4)">'+redlines+'</div><div style="font-size:11px;color:var(--t2)">红线触发</div></div>';
+  html+='</div></div>';
+
+  // 按人员
+  html+='<div class="r-card"><div class="r-card-title">👥 按人员</div>';
+  var names=Object.keys(people).sort();
+  names.forEach(function(n){
+    var p=people[n],pr=p.total?(p.passed/p.total*100).toFixed(1):"0.0";
+    var avg=(p.scores.reduce(function(a,b){return a+b},0)/p.scores.length).toFixed(0);
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">';
+    html+='<div><b>'+escHtml(n)+'</b><span style="font-size:11px;color:var(--t3);margin-left:8px">平均'+avg+'分</span></div>';
+    html+='<div><span style="color:'+(pr>=85?'var(--c1)':'var(--c4)')+'">'+pr+'%</span><span style="font-size:11px;color:var(--t3)"> '+p.passed+'/'+p.total+'</span></div>';
+    html+='</div>';
+  });
+  html+='</div>';
+
+  // 按板块
+  html+='<div class="r-card"><div class="r-card-title">📂 按板块</div>';
+  Object.keys(cats).forEach(function(c){
+    var ct=cats[c],cr=ct.total?(ct.passed/ct.total*100).toFixed(1):"0.0";
+    html+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd)"><span>'+escHtml(c)+'</span><span>通过率 '+cr+'%（'+ct.passed+'/'+ct.total+'）</span></div>';
+  });
+  html+='</div>';
+
+  // 最近记录
+  html+='<div class="r-card"><div class="r-card-title">📝 最近对练记录</div>';
+  var recent=h.slice(-20).reverse();
+  recent.forEach(function(r){
+    var dt=r.time?r.time.substring(0,16).replace("T"," "):"";
+    html+='<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px">';
+    html+='<b>'+escHtml(r.name)+'</b> '+escHtml(r.scenario)+' <span style="color:'+(r.total>=85?'var(--c1)':'var(--c4)')+'">'+r.total+'分 '+gradeMap[r.grade]+'</span>';
+    if(r.redline)html+=' <span style="color:var(--c4)">🚫红线</span>';
+    html+='<div style="color:var(--t3)">'+dt+' · '+r.cat+' · '+r.rounds+'轮</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+
+  html+='<button class="btn btn-d" style="width:100%;margin-top:8px" onclick="clearHistory()">🗑 清除本地记录</button>';
+  html+='<div style="text-align:center;padding:8px;font-size:11px;color:var(--t3)">注：数据显示本设备 localStorage 记录<br>群内推送卡片为完整记录</div>';
+  html+='</div>';
+
+  $("adminContent").innerHTML=html;
+  go("admin");
+}
+
+function clearHistory(){
+  if(!confirm("确定清除所有本地对练记录？\n\n群内推送的卡片不会受到影响。"))return;
+  localStorage.removeItem("ahs_history");
+  alert("已清除");
+  showAdmin();
 }
 
 /* ============================================================
