@@ -63,7 +63,7 @@ function load(){
       try{render(JSON.parse(xhr.responseText))}catch(e){error("数据解析失败")}
     }else{error("服务不可用 (HTTP "+xhr.status+")")}
   };
-  xhr.onerror=function(){error("无法连接本地同步服务<br><small>请确认 sync_server.py 正在运行</small>")};
+  xhr.onerror=function(){error("无法连接同步服务<br><small>请在本机浏览器打开：<br><b>http://localhost:8765/dashboard.html</b></small>")};
   xhr.ontimeout=function(){error("连接超时")};
   xhr.send();
 }
