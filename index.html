@@ -107,6 +107,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
   font-size:20px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .chat-bar .send:active{transform:scale(.9);opacity:.8}
 .chat-bar .send:disabled{background:#CCC}
+.chat-bar .mic{width:40px;height:40px;border-radius:50%;border:none;background:#FFF;color:var(--t2);
+  font-size:20px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.chat-bar .mic:active{transform:scale(.9)}
+.chat-bar .mic.rec{background:var(--c4);color:#FFF;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,77,79,.4)}50%{box-shadow:0 0 0 10px rgba(255,77,79,0)}}
+.mic-tip{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);
+  color:#FFF;padding:8px 20px;border-radius:20px;font-size:14px;z-index:50;display:none;max-width:90%}
+.mic-tip.show{display:block}
 
 /* ============================================================
    加载动画
@@ -211,9 +220,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
   </div>
   <div class="msgs" id="msgList"></div>
   <div class="chat-bar">
-    <input id="chatInput" type="text" placeholder="输入你的回复..." maxlength="500" autocomplete="off">
+    <input id="chatInput" type="text" placeholder="禁止粘贴，请打字或语音..." maxlength="500" autocomplete="off" onpaste="return false" ondrop="return false">
+    <button class="mic" id="micBtn" onclick="toggleMic()" title="语音输入">🎤</button>
     <button class="send" id="sendBtn" onclick="sendMsg()">↑</button>
   </div>
+  <div class="mic-tip" id="micTip">正在聆听...</div>
 </div>
 
 <!-- ============================================================
@@ -896,15 +907,48 @@ function backToHome(){
 }
 
 /* ============================================================
-   键盘事件
+   语音输入
+   ============================================================ */
+var recognition=null,isRecording=false;
+function toggleMic(){isRecording?stopMic():startMic()}
+function startMic(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert("当前浏览器不支持语音输入，请使用 Chrome/Edge 或飞书内打开");return}
+  if(!recognition){
+    recognition=new SR();recognition.lang="zh-CN";recognition.interimResults=true;recognition.continuous=true;
+    recognition.onresult=function(e){
+      var t="";for(var i=e.resultIndex;i<e.results.length;i++)t+=e.results[i][0].transcript;
+      $("chatInput").value=t;$("chatInput").focus();
+      if(e.results[e.results.length-1].isFinal){$("micTip").classList.remove("show")}
+      else{$("micTip").textContent=t||"正在聆听...";$("micTip").classList.add("show")}
+    };
+    recognition.onerror=function(e){stopMic();$("micTip").classList.remove("show");if(e.error==="not-allowed")alert("请允许麦克风权限")};
+    recognition.onend=function(){stopMic()};
+  }
+  try{isRecording=true;$("micBtn").classList.add("rec");$("micBtn").textContent="⏹";$("micTip").textContent="正在聆听...";$("micTip").classList.add("show");recognition.start()}catch(e){stopMic()}
+}
+function stopMic(){
+  isRecording=false;$("micBtn").classList.remove("rec");$("micBtn").textContent="🎤";$("micTip").classList.remove("show");
+  if(recognition)try{recognition.stop()}catch(e){}
+}
+
+/* ============================================================
+   键盘事件 & 防粘贴
    ============================================================ */
 document.addEventListener("keydown",function(e){
+  if(e.target&&e.target.id==="chatInput"){
+    if((e.ctrlKey||e.metaKey)&&e.key==="v"){e.preventDefault();return}
+    if(e.shiftKey&&e.key==="Insert"){e.preventDefault();return}
+  }
   if(e.key==="Enter"){
     var ws=document.querySelector(".screen.active");
     if(!ws)return;
     if(ws.id==="welcome"){confirmName()}
     else if(ws.id==="chat"){sendMsg()}
   }
+});
+document.addEventListener("contextmenu",function(e){
+  if(e.target&&e.target.id==="chatInput"){e.preventDefault()}
 });
 
 /* ============================================================
