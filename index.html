@@ -742,6 +742,8 @@ function endPractice(){
     S.score=score;
     renderReport(score);
     go("report");
+    // 自动推送到群
+    setTimeout(function(){pushToFeishu()},500);
   });
 }
 
@@ -998,18 +1000,42 @@ function stopMic(){
    管理员看板
    ============================================================ */
 function showAdmin(){
-  var h=[];try{h=JSON.parse(localStorage.getItem("ahs_history")||"[]")}catch(e){}
-  if(!h.length){$("adminContent").innerHTML='<div style=\"text-align:center;padding:60px;color:var(--t3)\">暂无对练记录</div>';go("admin");return}
+  $("adminContent").innerHTML='<div style=\"text-align:center;padding:60px;color:var(--t3)\">加载中...</div>';
+  go("admin");
+  // 尝试从同步服务读取数据
+  var fx=new XMLHttpRequest();
+  fx.open("GET","http://localhost:8765/api/records",true);
+  fx.timeout=5000;
+  fx.onreadystatechange=function(){
+    if(fx.readyState!==4)return;
+    if(fx.status===200){
+      try{renderAdmin(JSON.parse(fx.responseText))}catch(e){renderAdmin([])}
+    } else {
+      // fallback to localStorage
+      var h=[];try{h=JSON.parse(localStorage.getItem("ahs_history")||"[]")}catch(e){}
+      renderAdmin(h);
+    }
+  };
+  fx.onerror=function(){
+    var h=[];try{h=JSON.parse(localStorage.getItem("ahs_history")||"[]")}catch(e){}
+    renderAdmin(h);
+  };
+  fx.send();
+}
+function renderAdmin(h){
   var total=h.length,passed=0,redlines=0,people={},cats={},totalMktRate=0;
+  if(!total){$("adminContent").innerHTML='<div style=\"text-align:center;padding:60px;color:var(--t3)\">暂无对练记录<br><br>提示：确保 sync_server 在运行中</div>';return}
+  var gradeRev={"优秀":"excellent","良好":"good","合格":"pass","加油":"fail"};
   h.forEach(function(r){
-    if(r.grade!=="fail")passed++;if(r.redline)redlines++;
+    var g=r.grade||(gradeRev[r.grade_text]||"fail");
+    if(g!=="fail")passed++;if(r.redline)redlines++;
     if(!people[r.name])people[r.name]={total:0,passed:0,scores:[],mktRates:[]};
-    people[r.name].total++;if(r.grade!=="fail")people[r.name].passed++;
+    people[r.name].total++;if(g!=="fail")people[r.name].passed++;
     people[r.name].scores.push(r.total);
     people[r.name].mktRates.push(r.marketing_rate||0);
     totalMktRate+=(r.marketing_rate||0);
     if(!cats[r.cat])cats[r.cat]={total:0,passed:0};
-    cats[r.cat].total++;if(r.grade!=="fail")cats[r.cat].passed++;
+    cats[r.cat].total++;if(g!=="fail")cats[r.cat].passed++;
   });
   var rate=total?(passed/total*100).toFixed(1):"0.0";
   var gm={excellent:"优秀",good:"良好",pass:"合格",fail:"加油"};
@@ -1043,7 +1069,7 @@ function showAdmin(){
   h.slice(-20).reverse().forEach(function(r){
     var dt=r.time?r.time.substring(0,16).replace("T"," "):"";
     html+='<div style=\"padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px\">';
-    html+='<b>'+escHtml(r.name)+'</b> '+escHtml(r.scenario)+' <span style=\"color:'+(r.total>=85?'var(--c1)':'var(--c4)')+'\">'+r.total+'分 '+gm[r.grade]+'</span>';
+    html+='<b>'+escHtml(r.name)+'</b> '+escHtml(r.scenario)+' <span style=\"color:'+(r.total>=85?'var(--c1)':'var(--c4)')+'\">'+r.total+'分 '+(r.grade_text||gm[r.grade]||'')+'</span>';
     if(r.redline)html+=' <span style=\"color:var(--c4)\">🚫红线</span>';
     html+='<div style=\"color:var(--t3)\">'+dt+' · '+r.cat+' · '+r.rounds+'轮</div></div>';
   });
