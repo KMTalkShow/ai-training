@@ -6,167 +6,38 @@
 <title>AI对练数据看板</title>
 <style>
 :root{--c1:#00B578;--c2:#FF8F1F;--c3:#1677FF;--c4:#FF4D4F;--bg:#F5F5F5;--card:#FFF;--t1:#1A1A1A;--t2:#666;--t3:#999;--r:12px}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;max-width:800px;margin:0 auto;padding:16px}
-h1{font-size:22px;text-align:center;padding:16px 0 8px}
-h2{font-size:16px;margin-bottom:12px}
-.card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-.stat{text-align:center;padding:14px 10px;border-radius:var(--r)}
-.stat .val{font-size:28px;font-weight:800}
-.stat .lbl{font-size:12px;color:var(--t2);margin-top:2px}
-.s1{background:#E8F8F0}.s1 .val{color:var(--c1)}
-.s2{background:#F0F5FF}.s2 .val{color:var(--c3)}
-.s3{background:#FFFBE6}.s3 .val{color:var(--c2)}
-.s4{background:#FFF1F0}.s4 .val{color:var(--c4)}
-.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)}
-.row:last-child{border-bottom:none}
-.name{font-weight:600;font-size:14px}
-.meta{font-size:12px;color:var(--t3)}
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:4px}
-.badge.green{background:#E8F8F0;color:var(--c1)}
-.badge.red{background:#FFF1F0;color:var(--c4)}
-.badge.yellow{background:#FFFBE6;color:var(--c2)}
-.bar-wrap{flex:1;height:8px;background:#F0F0F0;border-radius:4px;margin:0 10px;overflow:hidden}
-.bar{height:100%;border-radius:4px;transition:width .5s}
-.bar.g{background:var(--c1)}.bar.b{background:var(--c3)}.bar.o{background:var(--c2)}.bar.r{background:var(--c4)}
-.pct{font-weight:700;font-size:13px;min-width:40px;text-align:right}
-.tags{margin-top:8px}
-.tag{display:inline-block;padding:3px 10px;margin:2px;border-radius:12px;font-size:11px}
-.tag.on{background:#E8F8F0;color:var(--c1)}
-.tag.off{background:#F5F5F5;color:var(--t3)}
-.actions{text-align:center;padding:16px 0}
-.btn{padding:12px 24px;border:none;border-radius:24px;font-size:14px;font-weight:600;cursor:pointer;background:var(--c1);color:#FFF}
-.btn:active{opacity:.8}
-.loading{text-align:center;padding:40px;color:var(--t3)}
-.error{text-align:center;padding:40px;color:var(--c4)}
-.refresh{font-size:12px;color:var(--t3);text-align:center;margin-top:4px}
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;max-width:800px;margin:0 auto;padding:16px}}
+h1{{font-size:22px;text-align:center;padding:12px 0 4px}}
+.up{{text-align:center;font-size:11px;color:var(--t3);margin-bottom:8px}}
+.card{{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,.08)}}
+h2{{font-size:16px;margin-bottom:12px}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}}
+.stat{{text-align:center;padding:14px 10px;border-radius:var(--r)}}
+.stat .v{{font-size:28px;font-weight:800}}
+.stat .l{{font-size:12px;color:var(--t2);margin-top:2px}}
+.s1{{background:#E8F8F0}}.s1 .v{{color:var(--c1)}}
+.s2{{background:#F0F5FF}}.s2 .v{{color:var(--c3)}}
+.s3{{background:#FFFBE6}}.s3 .v{{color:var(--c2)}}
+.s4{{background:#FFF1F0}}.s4 .v{{color:var(--c4)}}
+.row{{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd);--bd:#E8E8E8}}
+.row:last-child{{border-bottom:none}}
+.name{{font-weight:600;font-size:14px}}
+.meta{{font-size:12px;color:var(--t3)}}
+.badge{{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:4px}}
+.bg{{background:#E8F8F0;color:var(--c1)}}.br{{background:#FFF1F0;color:var(--c4)}}.by{{background:#FFFBE6;color:var(--c2)}}
+.bar-wrap{{flex:1;height:8px;background:#F0F0F0;border-radius:4px;margin:0 10px;overflow:hidden}}
+.bar{{height:100%;border-radius:4px}}.bar.g{{background:var(--c1)}}.bar.r{{background:var(--c4)}}
+.pct{{font-weight:700;font-size:13px;min-width:40px;text-align:right}}
+.tags{{margin-top:8px}}
+.tag{{display:inline-block;padding:6px 12px;margin:3px;border-radius:12px;font-size:12px}}
+.empty{{text-align:center;padding:60px;color:var(--t3)}}
+a{{color:var(--c3);text-decoration:none}}
 </style>
 </head>
 <body>
 <h1>📊 爱回收 AI 对练看板</h1>
-<div id="app"><div class="loading">加载中...</div></div>
-<div class="refresh" id="refreshTime"></div>
-
-<script>
-var API="/api/records";
-var gm={excellent:"优秀",good:"良好",pass:"合格",fail:"加油"};
-var gradeRev={"优秀":"excellent","良好":"good","合格":"pass","加油":"fail"};
-var ALL_CATS=["黄金回收","奢侈品回收","3C数码回收","严选二手机","延保"];
-
-function load(){
-  document.getElementById("app").innerHTML='<div class="loading">加载中...</div>';
-  var xhr=new XMLHttpRequest();
-  xhr.open("GET",API,true);xhr.timeout=8000;
-  xhr.onload=function(){
-    if(xhr.status===200){
-      try{render(JSON.parse(xhr.responseText))}catch(e){error("数据解析失败")}
-    }else{error("服务不可用 (HTTP "+xhr.status+")")}
-  };
-  xhr.onerror=function(){error("无法连接同步服务<br><small>请在本机浏览器打开：<br><b>http://localhost:8765/dashboard.html</b></small>")};
-  xhr.ontimeout=function(){error("连接超时")};
-  xhr.send();
-}
-
-function error(msg){
-  document.getElementById("app").innerHTML='<div class="error">'+msg+'<br><br><button class="btn" onclick="load()">重试</button></div>';
-}
-
-function render(data){
-  if(!data||!data.length){document.getElementById("app").innerHTML='<div class="loading">暂无对练记录<br><small>等待员工完成对练后自动出现</small><br><br><button class="btn" onclick="load()">刷新</button></div>';return}
-
-  var total=data.length,passed=0,redlines=0,people={},cats={},mktTotal=0;
-  var today=new Date().toISOString().substring(0,10),todayCount=0;
-  data.forEach(function(r){
-    var g=gradeRev[r.grade_text]||"fail";
-    if(g!=="fail")passed++;
-    if(r.redline)redlines++;
-    if((r.time||"").startsWith(today))todayCount++;
-    if(!people[r.name])people[r.name]={total:0,passed:0,scores:[],mktRates:[],cats:{}};
-    var p=people[r.name];p.total++;if(g!=="fail")p.passed++;p.scores.push(r.total);p.mktRates.push(r.marketing_rate||0);
-    if(r.cat)p.cats[r.cat]=(p.cats[r.cat]||0)+1;
-    if(!cats[r.cat])cats[r.cat]={total:0,passed:0};
-    cats[r.cat].total++;if(g!=="fail")cats[r.cat].passed++;
-    mktTotal+=(r.marketing_rate||0);
-  });
-  var rate=total?(passed/total*100).toFixed(1):"0.0";
-  var avgMkt=Math.round(mktTotal/total);
-
-  // Build HTML
-  var html='';
-
-  // Overview stats
-  html+='<div class="card"><h2>📈 总览</h2><div class="grid">';
-  html+=stat("总对练次数",total,"s1");
-  html+=stat("今日对练",todayCount,"s2");
-  html+=stat("通过率",rate+"%","s1");
-  html+=stat("通过",passed,"s2");
-  html+=stat("未通过",total-passed,"s4");
-  html+=stat("人均开口率",avgMkt+"%","s3");
-  html+=stat("红线触发",redlines,"s4");
-  html+=stat("参与人数",Object.keys(people).length,"s3");
-  html+='</div></div>';
-
-  // By person
-  html+='<div class="card"><h2>👥 按人员</h2>';
-  Object.keys(people).sort().forEach(function(n){
-    var p=people[n],pr=p.total?(p.passed/p.total*100).toFixed(1):"0.0";
-    var avg=(p.scores.reduce(function(a,b){return a+b},0)/p.scores.length).toFixed(0);
-    var avgM=Math.round(p.mktRates.reduce(function(a,b){return a+b},0)/p.mktRates.length);
-    var cls=avg>=85?"green":"red";
-    html+='<div class="row">';
-    html+='<div><div class="name">'+esc(n)+'</div><div class="meta">均'+avg+'分 · 开口率'+avgM+'% · '+Object.keys(p.cats).join("、")+'</div></div>';
-    html+='<div class="pct" style="color:'+(pr>=85?'var(--c1)':'var(--c4)')+'">'+pr+'%</div>';
-    html+='<span class="badge '+cls+'">'+p.passed+'/'+p.total+'</span>';
-    html+='</div>';
-  });
-  html+='</div>';
-
-  // By category
-  html+='<div class="card"><h2>📂 按板块</h2>';
-  Object.keys(cats).sort().forEach(function(c){
-    var ct=cats[c],cr=ct.total?(ct.passed/ct.total*100).toFixed(1):"0.0";
-    html+='<div class="row"><span>'+esc(c||"未知")+'</span><div class="bar-wrap"><div class="bar '+(cr>=85?'g':'r')+'" style="width:'+cr+'%"></div></div><div class="pct">'+cr+'%</div><span style="font-size:11px;color:var(--t3);margin-left:4px">'+ct.passed+'/'+ct.total+'</span></div>';
-  });
-  html+='</div>';
-
-  // Marketing stats
-  html+='<div class="card"><h2>📢 二次营销开口率</h2>';
-  var mktStats={};ALL_CATS.forEach(function(c){mktStats[c]=0});
-  data.forEach(function(r){
-    var txt=r.marketing_text||"";
-    ALL_CATS.forEach(function(c){if(txt.indexOf(c)>=0)mktStats[c]++});
-  });
-  html+='<div class="tags">';
-  ALL_CATS.forEach(function(c){
-    var cnt=mktStats[c],rate=data.length?(cnt/data.length*100).toFixed(0):"0";
-    html+='<span style="display:inline-block;padding:6px 12px;margin:3px;border-radius:12px;font-size:12px;'+(cnt>0?'background:#E8F8F0;color:var(--c1)':'background:#F5F5F5;color:var(--t3)')+'">'+c+'：<b>'+rate+'%</b>（'+cnt+'次）</span>';
-  });
-  html+='</div></div>';
-
-  // Recent
-  html+='<div class="card"><h2>📝 最近对练</h2>';
-  data.slice(-15).reverse().forEach(function(r){
-    var dt=(r.time||"").substring(0,16).replace("T"," ");
-    html+='<div class="row"><div><div class="name">'+esc(r.name)+'</div><div class="meta">'+esc(r.scenario)+' · '+dt+'</div></div>';
-    html+='<span style="font-weight:700;color:'+(r.total>=85?'var(--c1)':'var(--c4)')+'">'+r.total+'分</span>';
-    html+='<span class="badge '+(r.total>=85?'green':'red')+'">'+(r.grade_text||gm[r.grade]||"")+'</span>';
-    if(r.redline)html+='<span class="badge red">红线</span>';
-    html+='</div>';
-  });
-  html+='</div>';
-
-  html+='<div class="actions"><button class="btn" onclick="load()">🔄 刷新数据</button></div>';
-
-  document.getElementById("app").innerHTML=html;
-  document.getElementById("refreshTime").textContent="更新于 "+new Date().toLocaleTimeString();
-}
-
-function stat(label,value,cls){return '<div class="stat '+cls+'"><div class="val">'+value+'</div><div class="lbl">'+label+'</div></div>'}
-function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
-
-load();
-setInterval(load,60000);
-</script>
+<div class="up">更新于 2026-07-30 10:04:14 · 14条记录 · 自动刷新</div>
+<div class="card"><h2>📈 总览</h2><div class="grid"><div class="stat s1"><div class="v">14</div><div class="l">总对练次数</div></div><div class="stat s2"><div class="v">0</div><div class="l">今日对练</div></div><div class="stat s1"><div class="v">28.6%</div><div class="l">通过率</div></div><div class="stat s2"><div class="v">4</div><div class="l">通过</div></div><div class="stat s4"><div class="v">10</div><div class="l">未通过</div></div><div class="stat s3"><div class="v">14%</div><div class="l">人均开口率</div></div><div class="stat s4"><div class="v">0</div><div class="l">红线触发</div></div><div class="stat s3"><div class="v">5</div><div class="l">参与人数</div></div></div></div><div class="card"><h2>👥 按人员</h2><div class="row"><div><div class="name"></div><div class="meta">均0分 · 开口率0% · 无</div></div><div class="pct" style="color:var(--c4)">0.0%</div><span class="badge br">0/10</span></div><div class="row"><div><div class="name">测试</div><div class="meta">均85分 · 开口率40% · 3C回收</div></div><div class="pct" style="color:var(--c1)">100.0%</div><span class="badge bg">1/1</span></div><div class="row"><div><div class="name">测试-李家莉</div><div class="meta">均88分 · 开口率40% · 3C回收</div></div><div class="pct" style="color:var(--c1)">100.0%</div><span class="badge bg">1/1</span></div><div class="row"><div><div class="name">测试小李</div><div class="meta">均90分 · 开口率60% · 无</div></div><div class="pct" style="color:var(--c1)">100.0%</div><span class="badge bg">1/1</span></div><div class="row"><div><div class="name">端到端测试</div><div class="meta">均92分 · 开口率60% · 3C回收</div></div><div class="pct" style="color:var(--c1)">100.0%</div><span class="badge bg">1/1</span></div></div><div class="card"><h2>📂 按板块</h2><div class="row"><span>未知</span><div class="bar-wrap"><div class="bar r" style="width:9.1%"></div></div><div class="pct">9.1%</div><span style="font-size:11px;color:var(--t3);margin-left:4px">1/11</span></div><div class="row"><span>3C回收</span><div class="bar-wrap"><div class="bar g" style="width:100.0%"></div></div><div class="pct">100.0%</div><span style="font-size:11px;color:var(--t3);margin-left:4px">3/3</span></div></div><div class="card"><h2>📢 二次营销开口率</h2><div class="tags"><span class="tag" style="background:#E8F8F0;color:var(--c1)">黄金回收：<b>21%</b>（3次）</span><span class="tag" style="background:#F5F5F5;color:var(--t3)">奢侈品回收：<b>0%</b>（0次）</span><span class="tag" style="background:#F5F5F5;color:var(--t3)">3C数码回收：<b>0%</b>（0次）</span><span class="tag" style="background:#F5F5F5;color:var(--t3)">严选二手机：<b>0%</b>（0次）</span><span class="tag" style="background:#E8F8F0;color:var(--c1)">延保：<b>7%</b>（1次）</span></div></div><div class="card"><h2>📝 最近对练</h2><div class="row"><div><div class="name">端到端测试</div><div class="meta">闲鱼比价 · 2026-07-28 18:17</div></div><span style="font-weight:700;color:var(--c1)">92分</span><span class="badge bg">优秀</span></div><div class="row"><div><div class="name">测试小李</div><div class="meta">闲鱼比价 · 2026-07-28 17:00</div></div><span style="font-weight:700;color:var(--c1)">90分</span><span class="badge bg">优秀</span></div><div class="row"><div><div class="name">测试-李家莉</div><div class="meta">闲鱼比价 · 2026-07-28 13:00</div></div><span style="font-weight:700;color:var(--c1)">88分</span><span class="badge bg">合格</span></div><div class="row"><div><div class="name">测试</div><div class="meta">闲鱼比价 · 2026-07-28 12:42</div></div><span style="font-weight:700;color:var(--c1)">85分</span><span class="badge bg">合格</span></div><div class="row"><div><div class="name"></div><div class="meta"> · </div></div><span style="font-weight:700;color:var(--c4)">0分</span><span class="badge br"></span></div><div class="row"><div><div class="name"></div><div class="meta"> · </div></div><span style="font-weight:700;color:var(--c4)">0分</span><span class="badge br"></span></div><div class="row"><div><div class="name"></div><div class="meta"> · </div></div><span style="font-weight:700;color:var(--c4)">0分</span><span class="badge br"></span></div><div class="row"><div><div class="name"></div><div class="meta"> · </div></div><span style="font-weight:700;color:var(--c4)">0分</span><span class="badge br"></span></div><div class="row"><div><div class="name"></div><div class="meta"> · </div></div><span style="font-weight:700;color:var(--c4)">0分</span><span class="badge br"></span></div><div class="row"><div><div class="name"></div><div class="meta"> · </div></div><span style="font-weight:700;color:var(--c4)">0分</span><span class="badge br"></span></div><div class="row"><div><div class="name"></div><div class="meta"> · </div></div><span style="font-weight:700;color:var(--c4)">0分</span><span class="badge br"></span></div><div class="row"><div><div class="name"></div><div class="meta"> · </div></div><span style="font-weight:700;color:var(--c4)">0分</span><span class="badge br"></span></div><div class="row"><div><div class="name"></div><div class="meta"> · </div></div><span style="font-weight:700;color:var(--c4)">0分</span><span class="badge br"></span></div><div class="row"><div><div class="name"></div><div class="meta"> · </div></div><span style="font-weight:700;color:var(--c4)">0分</span><span class="badge br"></span></div></div>
 </body>
 </html>
